@@ -40,10 +40,13 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
 
             {/* Focus Mode Toggle */}
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-charcoal-600">Focus Mode</span>
+              <span className="text-sm text-charcoal-600">Smart Focus</span>
               <Switch checked={focusMode} onCheckedChange={onToggleFocusMode} />
               {focusMode && (
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="text-xs text-green-600 font-medium">Active</span>
+                </div>
               )}
             </div>
 

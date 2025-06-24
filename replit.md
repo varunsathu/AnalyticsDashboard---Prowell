@@ -119,8 +119,19 @@ The application follows a full-stack architecture with clear separation between 
 
 ## Changelog
 
-- June 24, 2025. Initial setup
+- June 24, 2025. Initial setup and basic dashboard implementation
+- June 24, 2025. Enhanced with browser activity tracking, Apple Watch integration, smart focus mode, and weekly reporting features
+
+## Recent Changes
+
+✓ Added comprehensive browser activity tracking with real-time categorization
+✓ Implemented Apple Watch health metrics integration with fitness goals
+✓ Created smart focus mode that automatically activates during development work
+✓ Built weekly report generation with productivity insights and recommendations
+✓ Enhanced quick capture with voice-to-text functionality
+✓ Added premium glass design with teal/charcoal color scheme (no purple)
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design preference: Clean, minimalistic design with premium glass effects. No purple colors - prefer teal/charcoal theme.

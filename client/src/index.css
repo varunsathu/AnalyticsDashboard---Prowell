@@ -196,11 +196,44 @@
   background: rgba(0, 0, 0, 0.3);
   pointer-events: none;
   z-index: 40;
+  backdrop-filter: blur(2px);
 }
 
 .focus-mode-content {
   position: relative;
   z-index: 41;
+}
+
+/* Focus mode styles */
+.focus-mode-active .focus-hide {
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.focus-mode-active .focus-highlight {
+  box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
+  border: 2px solid rgba(20, 184, 166, 0.6);
+  transition: all 0.3s ease;
+}
+
+/* Smart focus notifications */
+.smart-focus-notification {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 50;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Timer progress circle */

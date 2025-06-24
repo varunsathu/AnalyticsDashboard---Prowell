@@ -8,6 +8,8 @@ import {
   insertActivitySchema,
   insertEventSchema,
   insertFocusSessionSchema,
+  insertBrowserActivitySchema,
+  insertHealthMetricSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -234,6 +236,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Browser Activities
+  app.get("/api/browser-activities", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : undefined;
+      const end = endDate ? new Date(endDate as string) : undefined;
+      const activities = await storage.getUserBrowserActivities(userId, start, end);
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch browser activities" });
+    }
+  });
+
+  app.post("/api/browser-activities", async (req, res) => {
+    try {
+      const activityData = insertBrowserActivitySchema.parse(req.body);
+      const activity = await storage.createBrowserActivity(userId, activityData);
+      res.json(activity);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid browser activity data" });
+    }
+  });
+
+  app.get("/api/browser-activities/stats", async (req, res) => {
+    try {
+      const { date } = req.query;
+      const statsDate = date ? new Date(date as string) : new Date();
+      const stats = await storage.getBrowserActivityStats(userId, statsDate);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch browser activity stats" });
+    }
+  });
+
+  // Health Metrics
+  app.get("/api/health-metrics", async (req, res) => {
+    try {
+      const { type, startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : undefined;
+      const end = endDate ? new Date(endDate as string) : undefined;
+      const metrics = await storage.getUserHealthMetrics(userId, type as string, start, end);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch health metrics" });
+    }
+  });
+
+  app.post("/api/health-metrics", async (req, res) => {
+    try {
+      const metricData = insertHealthMetricSchema.parse(req.body);
+      const metric = await storage.createHealthMetric(userId, metricData);
+      res.json(metric);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid health metric data" });
+    }
+  });
+
+  app.get("/api/health-metrics/latest", async (req, res) => {
+    try {
+      const metrics = await storage.getLatestHealthMetrics(userId);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest health metrics" });
+    }
+  });
+
+  // Weekly Reports
+  app.get("/api/weekly-reports", async (req, res) => {
+    try {
+      const { limit } = req.query;
+      const reports = await storage.getUserWeeklyReports(userId, limit ? parseInt(limit as string) : undefined);
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch weekly reports" });
+    }
+  });
+
+  app.post("/api/weekly-reports/generate", async (req, res) => {
+    try {
+      const { weekStart } = req.body;
+      const report = await storage.generateWeeklyReport(userId, new Date(weekStart));
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate weekly report" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
@@ -243,10 +332,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const [tasks, activities, focusSessions] = await Promise.all([
+      const [tasks, activities, focusSessions, browserStats, healthMetrics] = await Promise.all([
         storage.getUserTasks(userId),
         storage.getUserActivities(userId, startOfDay, endOfDay),
         storage.getUserFocusSessions(userId, startOfDay, endOfDay),
+        storage.getBrowserActivityStats(userId, today),
+        storage.getLatestHealthMetrics(userId),
       ]);
 
       const completedTasks = tasks.filter(task => task.status === 'completed');
@@ -269,8 +360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalTasks,
         weeklyGoals: 4, // Mock data for weekly goals
         totalWeeklyGoals: 7,
-        productivityScore: Math.min(100, Math.round((focusTime / 240) * 100)), // Based on 4h goal
+        productivityScore: browserStats.productivityScore || Math.min(100, Math.round((focusTime / 240) * 100)),
         activityStats,
+        browserStats,
+        healthMetrics,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });

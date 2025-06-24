@@ -73,6 +73,41 @@ export const focusSessions = pgTable("focus_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const browserActivities = pgTable("browser_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  url: text("url").notNull(),
+  domain: text("domain").notNull(),
+  title: text("title").notNull(),
+  category: text("category").notNull(), // 'development', 'learning', 'entertainment', 'social', 'productivity'
+  duration: integer("duration").notNull(), // in seconds
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const healthMetrics = pgTable("health_metrics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // 'steps', 'heartRate', 'calories', 'workout'
+  value: integer("value").notNull(),
+  unit: text("unit").notNull(), // 'steps', 'bpm', 'calories', 'minutes'
+  metadata: jsonb("metadata"), // additional data like workout type, etc.
+  recordedAt: timestamp("recorded_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const weeklyReports = pgTable("weekly_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  weekStart: timestamp("week_start").notNull(),
+  weekEnd: timestamp("week_end").notNull(),
+  browserStats: jsonb("browser_stats").notNull(),
+  productivityScore: integer("productivity_score").notNull(),
+  recommendations: jsonb("recommendations").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -137,6 +172,36 @@ export const insertFocusSessionSchema = createInsertSchema(focusSessions).pick({
   type: z.enum(['focus', 'break']),
 });
 
+export const insertBrowserActivitySchema = createInsertSchema(browserActivities).pick({
+  url: true,
+  domain: true,
+  title: true,
+  category: true,
+  duration: true,
+  startTime: true,
+  endTime: true,
+}).extend({
+  category: z.enum(['development', 'learning', 'entertainment', 'social', 'productivity']),
+});
+
+export const insertHealthMetricSchema = createInsertSchema(healthMetrics).pick({
+  type: true,
+  value: true,
+  unit: true,
+  metadata: true,
+  recordedAt: true,
+}).extend({
+  type: z.enum(['steps', 'heartRate', 'calories', 'workout']),
+});
+
+export const insertWeeklyReportSchema = createInsertSchema(weeklyReports).pick({
+  weekStart: true,
+  weekEnd: true,
+  browserStats: true,
+  productivityScore: true,
+  recommendations: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -156,3 +221,12 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 
 export type FocusSession = typeof focusSessions.$inferSelect;
 export type InsertFocusSession = z.infer<typeof insertFocusSessionSchema>;
+
+export type BrowserActivity = typeof browserActivities.$inferSelect;
+export type InsertBrowserActivity = z.infer<typeof insertBrowserActivitySchema>;
+
+export type HealthMetric = typeof healthMetrics.$inferSelect;
+export type InsertHealthMetric = z.infer<typeof insertHealthMetricSchema>;
+
+export type WeeklyReport = typeof weeklyReports.$inferSelect;
+export type InsertWeeklyReport = z.infer<typeof insertWeeklyReportSchema>;

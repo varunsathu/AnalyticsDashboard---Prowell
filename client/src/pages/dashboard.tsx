@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 import StatsOverview from "@/components/StatsOverview";
 import TaskManager from "@/components/TaskManager";
@@ -6,12 +6,30 @@ import ActivityTracker from "@/components/ActivityTracker";
 import SmartNotes from "@/components/SmartNotes";
 import CalendarWidget from "@/components/CalendarWidget";
 import FocusTimer from "@/components/FocusTimer";
+import HealthMetrics from "@/components/HealthMetrics";
+import WeeklyReport from "@/components/WeeklyReport";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
+import SmartFocusNotification from "@/components/SmartFocusNotification";
 import { useFocusMode } from "@/hooks/useFocusMode";
+import { useBrowserTracking } from "@/hooks/useBrowserTracking";
 
 export default function Dashboard() {
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
+  const [showSmartFocusNotification, setShowSmartFocusNotification] = useState(false);
+  const [smartFocusActivityType, setSmartFocusActivityType] = useState('');
+  
   const { focusMode, toggleFocusMode } = useFocusMode();
+  const { isTracking, currentActivity } = useBrowserTracking();
+
+  // Show smart focus suggestions based on activity
+  useEffect(() => {
+    if (currentActivity && 
+        (currentActivity.category === 'development' || currentActivity.category === 'learning') &&
+        !focusMode) {
+      setSmartFocusActivityType(currentActivity.category);
+      setShowSmartFocusNotification(true);
+    }
+  }, [currentActivity, focusMode]);
 
   return (
     <div className="min-h-screen bg-charcoal-50 font-inter">
@@ -32,13 +50,19 @@ export default function Dashboard() {
             <div className="lg:col-span-2 space-y-8">
               <TaskManager />
               <ActivityTracker />
+              <WeeklyReport />
             </div>
 
             {/* Right Column */}
             <div className="space-y-8">
               <SmartNotes />
               <CalendarWidget />
-              <FocusTimer />
+              <div className={focusMode ? "focus-highlight" : ""}>
+                <FocusTimer />
+              </div>
+              <div className={focusMode ? "focus-hide" : ""}>
+                <HealthMetrics />
+              </div>
             </div>
           </div>
         </div>
@@ -46,6 +70,16 @@ export default function Dashboard() {
         <QuickCaptureModal
           isOpen={isQuickCaptureOpen}
           onClose={() => setIsQuickCaptureOpen(false)}
+        />
+
+        <SmartFocusNotification
+          isVisible={showSmartFocusNotification}
+          activityType={smartFocusActivityType}
+          onAccept={() => {
+            toggleFocusMode();
+            setShowSmartFocusNotification(false);
+          }}
+          onDismiss={() => setShowSmartFocusNotification(false)}
         />
       </div>
     </div>

@@ -70,14 +70,14 @@ export default function CalendarWidget() {
         {/* Mini Calendar */}
         <div className="mb-6">
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-charcoal-600 mb-2">
-            {weekDays.map((day) => (
-              <div key={day}>{day}</div>
+            {weekDays.map((day, index) => (
+              <div key={`${day}-${index}`}>{day}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-sm">
-            {days.map((day) => (
+            {days.map((day, index) => (
               <div
-                key={day.toISOString()}
+                key={`${day.toISOString()}-${index}`}
                 className={`p-2 rounded cursor-pointer transition-colors ${
                   isToday(day)
                     ? "bg-teal-600 text-white font-semibold"
