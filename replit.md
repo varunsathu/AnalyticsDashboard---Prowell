@@ -80,6 +80,15 @@ The application follows a full-stack architecture with clear separation between 
 - Multi-device auto-detection and seamless data synchronization
 - Device-specific accuracy profiling and data validation
 
+### Adaptive Ambient Soundscapes
+- **Nature Sounds**: Rain, ocean waves, forest ambience, waterfall
+- **Marine Life**: Whale songs and underwater environments
+- **Instrumental**: Piano, acoustic guitar, string ensemble arrangements
+- **Smart Adaptation**: Auto-selects sounds based on work mode and time
+- **Custom Preferences**: User-defined sound libraries and volume controls
+- **Work Mode Integration**: Adapts to focus, creative, coding, meditation modes
+- **Web Audio API**: High-quality procedural sound generation
+
 ## Data Flow
 
 1. **Client Requests**: React components use TanStack Query to make API requests
@@ -144,6 +153,7 @@ The application follows a full-stack architecture with clear separation between 
 ✓ Added premium glass design with teal/charcoal color scheme (no purple)
 ✓ **Migrated to PostgreSQL database for persistent data storage and scalability**
 ✓ **Enhanced health integration with multi-device support and device-specific accuracy profiling**
+✓ **Added adaptive ambient soundscapes with nature sounds, instruments, and smart work mode detection**
 
 ## User Preferences
 

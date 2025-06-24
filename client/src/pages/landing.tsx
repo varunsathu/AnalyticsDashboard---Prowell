@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Brain, Calendar, Clock, Target, TrendingUp } from "lucide-react";
+import { Activity, Brain, Calendar, Clock, Target, TrendingUp, Volume2 } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -98,6 +98,18 @@ export default function Landing() {
               <CardTitle className="text-lg">Smart Notes</CardTitle>
               <CardDescription>
                 Capture ideas with voice-to-text, organize with tags, and search intelligently.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm dark:bg-slate-800/70">
+            <CardHeader>
+              <div className="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center mb-3">
+                <Volume2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <CardTitle className="text-lg">Ambient Soundscapes</CardTitle>
+              <CardDescription>
+                Adaptive background audio with rain, ocean, forest sounds, and instrumental music to enhance focus.
               </CardDescription>
             </CardHeader>
           </Card>
