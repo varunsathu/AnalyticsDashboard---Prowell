@@ -9,7 +9,7 @@ import {
   healthMetrics,
   weeklyReports,
   type User,
-  type InsertUser,
+  type UpsertUser,
   type Task,
   type InsertTask,
   type UpdateTask,
@@ -32,57 +32,56 @@ import { db } from "./db";
 import { eq, and, desc, gte, lte, like, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // Users
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Users (IMPORTANT) these user operations are mandatory for Replit Auth.
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Tasks
-  getUserTasks(userId: number): Promise<Task[]>;
+  getUserTasks(userId: string): Promise<Task[]>;
   getTask(id: number): Promise<Task | undefined>;
-  createTask(userId: number, task: InsertTask): Promise<Task>;
-  updateTask(userId: number, task: UpdateTask): Promise<Task | undefined>;
-  deleteTask(userId: number, taskId: number): Promise<boolean>;
+  createTask(userId: string, task: InsertTask): Promise<Task>;
+  updateTask(userId: string, task: UpdateTask): Promise<Task | undefined>;
+  deleteTask(userId: string, taskId: number): Promise<boolean>;
 
   // Notes
-  getUserNotes(userId: number): Promise<Note[]>;
+  getUserNotes(userId: string): Promise<Note[]>;
   getNote(id: number): Promise<Note | undefined>;
-  createNote(userId: number, note: InsertNote): Promise<Note>;
-  updateNote(userId: number, noteId: number, note: Partial<InsertNote>): Promise<Note | undefined>;
-  deleteNote(userId: number, noteId: number): Promise<boolean>;
-  searchNotes(userId: number, query: string): Promise<Note[]>;
+  createNote(userId: string, note: InsertNote): Promise<Note>;
+  updateNote(userId: string, noteId: number, note: Partial<InsertNote>): Promise<Note | undefined>;
+  deleteNote(userId: string, noteId: number): Promise<boolean>;
+  searchNotes(userId: string, query: string): Promise<Note[]>;
 
   // Activities
-  getUserActivities(userId: number, startDate?: Date, endDate?: Date): Promise<Activity[]>;
-  createActivity(userId: number, activity: InsertActivity): Promise<Activity>;
-  getActivityStats(userId: number, date: Date): Promise<any>;
+  getUserActivities(userId: string, startDate?: Date, endDate?: Date): Promise<Activity[]>;
+  createActivity(userId: string, activity: InsertActivity): Promise<Activity>;
+  getActivityStats(userId: string, date: Date): Promise<any>;
 
   // Events
-  getUserEvents(userId: number, startDate?: Date, endDate?: Date): Promise<Event[]>;
-  createEvent(userId: number, event: InsertEvent): Promise<Event>;
-  updateEvent(userId: number, eventId: number, event: Partial<InsertEvent>): Promise<Event | undefined>;
-  deleteEvent(userId: number, eventId: number): Promise<boolean>;
+  getUserEvents(userId: string, startDate?: Date, endDate?: Date): Promise<Event[]>;
+  createEvent(userId: string, event: InsertEvent): Promise<Event>;
+  updateEvent(userId: string, eventId: number, event: Partial<InsertEvent>): Promise<Event | undefined>;
+  deleteEvent(userId: string, eventId: number): Promise<boolean>;
 
   // Focus Sessions
-  getUserFocusSessions(userId: number, startDate?: Date, endDate?: Date): Promise<FocusSession[]>;
-  createFocusSession(userId: number, session: InsertFocusSession): Promise<FocusSession>;
-  updateFocusSession(userId: number, sessionId: number, session: Partial<InsertFocusSession>): Promise<FocusSession | undefined>;
+  getUserFocusSessions(userId: string, startDate?: Date, endDate?: Date): Promise<FocusSession[]>;
+  createFocusSession(userId: string, session: InsertFocusSession): Promise<FocusSession>;
+  updateFocusSession(userId: string, sessionId: number, session: Partial<InsertFocusSession>): Promise<FocusSession | undefined>;
 
   // Browser Activities
-  getUserBrowserActivities(userId: number, startDate?: Date, endDate?: Date): Promise<BrowserActivity[]>;
-  createBrowserActivity(userId: number, activity: InsertBrowserActivity): Promise<BrowserActivity>;
-  getBrowserActivityStats(userId: number, date: Date): Promise<any>;
+  getUserBrowserActivities(userId: string, startDate?: Date, endDate?: Date): Promise<BrowserActivity[]>;
+  createBrowserActivity(userId: string, activity: InsertBrowserActivity): Promise<BrowserActivity>;
+  getBrowserActivityStats(userId: string, date: Date): Promise<any>;
   categorizeUrl(url: string): string;
 
   // Health Metrics
-  getUserHealthMetrics(userId: number, type?: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]>;
-  createHealthMetric(userId: number, metric: InsertHealthMetric): Promise<HealthMetric>;
-  getLatestHealthMetrics(userId: number): Promise<Record<string, HealthMetric>>;
+  getUserHealthMetrics(userId: string, type?: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]>;
+  createHealthMetric(userId: string, metric: InsertHealthMetric): Promise<HealthMetric>;
+  getLatestHealthMetrics(userId: string): Promise<Record<string, HealthMetric>>;
 
   // Weekly Reports
-  getUserWeeklyReports(userId: number, limit?: number): Promise<WeeklyReport[]>;
-  createWeeklyReport(userId: number, report: InsertWeeklyReport): Promise<WeeklyReport>;
-  generateWeeklyReport(userId: number, weekStart: Date): Promise<WeeklyReport>;
+  getUserWeeklyReports(userId: string, limit?: number): Promise<WeeklyReport[]>;
+  createWeeklyReport(userId: string, report: InsertWeeklyReport): Promise<WeeklyReport>;
+  generateWeeklyReport(userId: string, weekStart: Date): Promise<WeeklyReport>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -96,16 +95,17 @@ export class DatabaseStorage implements IStorage {
   private async initializeDemoData() {
     try {
       // Check if demo user already exists
-      const existingUser = await db.select().from(users).where(eq(users.username, 'varun')).limit(1);
+      const existingUser = await db.select().from(users).where(eq(users.id, 'demo-user-id')).limit(1);
       
       if (existingUser.length === 0) {
-        // Create demo user
-        const [demoUser] = await db.insert(users).values({
-          username: 'varun',
-          password: 'demo',
-          name: 'Varun',
-          email: 'varun@example.com',
-        }).returning();
+        // Create demo user for testing
+        const demoUser = await this.upsertUser({
+          id: 'demo-user-id',
+          email: 'demo@example.com',
+          firstName: 'Demo',
+          lastName: 'User',
+          profileImageUrl: null,
+        });
 
         // Add demo browser activities and health data
         await this.initializeDemoBrowserData(demoUser.id);
@@ -116,7 +116,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  private async initializeDemoBrowserData(userId: number) {
+  private async initializeDemoBrowserData(userId: string) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -166,7 +166,7 @@ export class DatabaseStorage implements IStorage {
     await db.insert(browserActivities).values(demoActivities);
   }
 
-  private async initializeDemoHealthData(userId: number) {
+  private async initializeDemoHealthData(userId: string) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -208,27 +208,29 @@ export class DatabaseStorage implements IStorage {
     await db.insert(healthMetrics).values(demoMetrics);
   }
 
-  // Users
-  async getUser(id: number): Promise<User | undefined> {
+  // Users (IMPORTANT) these user operations are mandatory for Replit Auth.
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
     return user;
   }
 
   // Tasks
-  async getUserTasks(userId: number): Promise<Task[]> {
+  async getUserTasks(userId: string): Promise<Task[]> {
     return await db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
   }
 
@@ -237,7 +239,7 @@ export class DatabaseStorage implements IStorage {
     return task || undefined;
   }
 
-  async createTask(userId: number, insertTask: InsertTask): Promise<Task> {
+  async createTask(userId: string, insertTask: InsertTask): Promise<Task> {
     const [task] = await db
       .insert(tasks)
       .values({ ...insertTask, userId })
@@ -245,7 +247,7 @@ export class DatabaseStorage implements IStorage {
     return task;
   }
 
-  async updateTask(userId: number, updateTask: UpdateTask): Promise<Task | undefined> {
+  async updateTask(userId: string, updateTask: UpdateTask): Promise<Task | undefined> {
     const [task] = await db
       .update(tasks)
       .set({
@@ -258,7 +260,7 @@ export class DatabaseStorage implements IStorage {
     return task || undefined;
   }
 
-  async deleteTask(userId: number, taskId: number): Promise<boolean> {
+  async deleteTask(userId: string, taskId: number): Promise<boolean> {
     const result = await db
       .delete(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
@@ -266,7 +268,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Notes
-  async getUserNotes(userId: number): Promise<Note[]> {
+  async getUserNotes(userId: string): Promise<Note[]> {
     return await db.select().from(notes).where(eq(notes.userId, userId)).orderBy(desc(notes.createdAt));
   }
 
@@ -275,7 +277,7 @@ export class DatabaseStorage implements IStorage {
     return note || undefined;
   }
 
-  async createNote(userId: number, insertNote: InsertNote): Promise<Note> {
+  async createNote(userId: string, insertNote: InsertNote): Promise<Note> {
     const [note] = await db
       .insert(notes)
       .values({ ...insertNote, userId })
@@ -283,7 +285,7 @@ export class DatabaseStorage implements IStorage {
     return note;
   }
 
-  async updateNote(userId: number, noteId: number, updateNote: Partial<InsertNote>): Promise<Note | undefined> {
+  async updateNote(userId: string, noteId: number, updateNote: Partial<InsertNote>): Promise<Note | undefined> {
     const [note] = await db
       .update(notes)
       .set({ ...updateNote, updatedAt: new Date() })
@@ -292,14 +294,14 @@ export class DatabaseStorage implements IStorage {
     return note || undefined;
   }
 
-  async deleteNote(userId: number, noteId: number): Promise<boolean> {
+  async deleteNote(userId: string, noteId: number): Promise<boolean> {
     const result = await db
       .delete(notes)
       .where(and(eq(notes.id, noteId), eq(notes.userId, userId)));
     return (result.rowCount || 0) > 0;
   }
 
-  async searchNotes(userId: number, query: string): Promise<Note[]> {
+  async searchNotes(userId: string, query: string): Promise<Note[]> {
     return await db
       .select()
       .from(notes)
@@ -316,7 +318,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activities
-  async getUserActivities(userId: number, startDate?: Date, endDate?: Date): Promise<Activity[]> {
+  async getUserActivities(userId: string, startDate?: Date, endDate?: Date): Promise<Activity[]> {
     let conditions = [eq(activities.userId, userId)];
     
     if (startDate) {
@@ -333,7 +335,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(activities.startTime));
   }
 
-  async createActivity(userId: number, insertActivity: InsertActivity): Promise<Activity> {
+  async createActivity(userId: string, insertActivity: InsertActivity): Promise<Activity> {
     const [activity] = await db
       .insert(activities)
       .values({ ...insertActivity, userId })
@@ -341,7 +343,7 @@ export class DatabaseStorage implements IStorage {
     return activity;
   }
 
-  async getActivityStats(userId: number, date: Date): Promise<any> {
+  async getActivityStats(userId: string, date: Date): Promise<any> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -367,7 +369,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Events
-  async getUserEvents(userId: number, startDate?: Date, endDate?: Date): Promise<Event[]> {
+  async getUserEvents(userId: string, startDate?: Date, endDate?: Date): Promise<Event[]> {
     let conditions = [eq(events.userId, userId)];
     
     if (startDate) {
@@ -384,7 +386,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(events.startTime));
   }
 
-  async createEvent(userId: number, insertEvent: InsertEvent): Promise<Event> {
+  async createEvent(userId: string, insertEvent: InsertEvent): Promise<Event> {
     const [event] = await db
       .insert(events)
       .values({ ...insertEvent, userId })
@@ -392,7 +394,7 @@ export class DatabaseStorage implements IStorage {
     return event;
   }
 
-  async updateEvent(userId: number, eventId: number, updateEvent: Partial<InsertEvent>): Promise<Event | undefined> {
+  async updateEvent(userId: string, eventId: number, updateEvent: Partial<InsertEvent>): Promise<Event | undefined> {
     const [event] = await db
       .update(events)
       .set(updateEvent)
@@ -401,7 +403,7 @@ export class DatabaseStorage implements IStorage {
     return event || undefined;
   }
 
-  async deleteEvent(userId: number, eventId: number): Promise<boolean> {
+  async deleteEvent(userId: string, eventId: number): Promise<boolean> {
     const result = await db
       .delete(events)
       .where(and(eq(events.id, eventId), eq(events.userId, userId)));
@@ -409,7 +411,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Focus Sessions
-  async getUserFocusSessions(userId: number, startDate?: Date, endDate?: Date): Promise<FocusSession[]> {
+  async getUserFocusSessions(userId: string, startDate?: Date, endDate?: Date): Promise<FocusSession[]> {
     let conditions = [eq(focusSessions.userId, userId)];
     
     if (startDate) {
@@ -426,7 +428,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(focusSessions.startTime));
   }
 
-  async createFocusSession(userId: number, insertSession: InsertFocusSession): Promise<FocusSession> {
+  async createFocusSession(userId: string, insertSession: InsertFocusSession): Promise<FocusSession> {
     const [session] = await db
       .insert(focusSessions)
       .values({ ...insertSession, userId })
@@ -434,7 +436,7 @@ export class DatabaseStorage implements IStorage {
     return session;
   }
 
-  async updateFocusSession(userId: number, sessionId: number, updateSession: Partial<InsertFocusSession>): Promise<FocusSession | undefined> {
+  async updateFocusSession(userId: string, sessionId: number, updateSession: Partial<InsertFocusSession>): Promise<FocusSession | undefined> {
     const [session] = await db
       .update(focusSessions)
       .set(updateSession)
@@ -444,7 +446,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Browser Activities
-  async getUserBrowserActivities(userId: number, startDate?: Date, endDate?: Date): Promise<BrowserActivity[]> {
+  async getUserBrowserActivities(userId: string, startDate?: Date, endDate?: Date): Promise<BrowserActivity[]> {
     let conditions = [eq(browserActivities.userId, userId)];
     
     if (startDate) {
@@ -461,7 +463,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(browserActivities.startTime));
   }
 
-  async createBrowserActivity(userId: number, insertActivity: InsertBrowserActivity): Promise<BrowserActivity> {
+  async createBrowserActivity(userId: string, insertActivity: InsertBrowserActivity): Promise<BrowserActivity> {
     const [activity] = await db
       .insert(browserActivities)
       .values({ ...insertActivity, userId })
@@ -469,7 +471,7 @@ export class DatabaseStorage implements IStorage {
     return activity;
   }
 
-  async getBrowserActivityStats(userId: number, date: Date): Promise<any> {
+  async getBrowserActivityStats(userId: string, date: Date): Promise<any> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -559,7 +561,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Health Metrics
-  async getUserHealthMetrics(userId: number, type?: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]> {
+  async getUserHealthMetrics(userId: string, type?: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]> {
     let conditions = [eq(healthMetrics.userId, userId)];
     
     if (type) {
@@ -579,7 +581,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(healthMetrics.recordedAt));
   }
 
-  async createHealthMetric(userId: number, insertMetric: InsertHealthMetric): Promise<HealthMetric> {
+  async createHealthMetric(userId: string, insertMetric: InsertHealthMetric): Promise<HealthMetric> {
     const [metric] = await db
       .insert(healthMetrics)
       .values({ ...insertMetric, userId })
@@ -587,7 +589,7 @@ export class DatabaseStorage implements IStorage {
     return metric;
   }
 
-  async getLatestHealthMetrics(userId: number): Promise<Record<string, HealthMetric>> {
+  async getLatestHealthMetrics(userId: string): Promise<Record<string, HealthMetric>> {
     const userMetrics = await this.getUserHealthMetrics(userId);
     const latest: Record<string, HealthMetric> = {};
     
@@ -601,7 +603,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Weekly Reports
-  async getUserWeeklyReports(userId: number, limit: number = 10): Promise<WeeklyReport[]> {
+  async getUserWeeklyReports(userId: string, limit: number = 10): Promise<WeeklyReport[]> {
     return await db
       .select()
       .from(weeklyReports)
@@ -610,7 +612,7 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async createWeeklyReport(userId: number, insertReport: InsertWeeklyReport): Promise<WeeklyReport> {
+  async createWeeklyReport(userId: string, insertReport: InsertWeeklyReport): Promise<WeeklyReport> {
     const [report] = await db
       .insert(weeklyReports)
       .values({ ...insertReport, userId })
@@ -618,7 +620,7 @@ export class DatabaseStorage implements IStorage {
     return report;
   }
 
-  async generateWeeklyReport(userId: number, weekStart: Date): Promise<WeeklyReport> {
+  async generateWeeklyReport(userId: string, weekStart: Date): Promise<WeeklyReport> {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);

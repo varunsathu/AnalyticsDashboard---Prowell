@@ -12,8 +12,25 @@ import {
   insertHealthMetricSchema,
 } from "@shared/schema";
 
+import { setupAuth, isAuthenticated } from "./replitAuth";
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  const userId = 1; // Demo user ID
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  const userId = "demo-user-id"; // Demo user ID for development
 
   // Tasks
   app.get("/api/tasks", async (req, res) => {

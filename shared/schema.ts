@@ -1,19 +1,42 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  varchar,
+  integer,
+  timestamp,
+  jsonb,
+  text,
+  index,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
-  email: text("email"),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
   category: text("category").notNull(),
@@ -28,8 +51,8 @@ export const tasks = pgTable("tasks", {
 });
 
 export const notes = pgTable("notes", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   content: text("content").notNull(),
   tags: text("tags").array(),
@@ -39,12 +62,12 @@ export const notes = pgTable("notes", {
 });
 
 export const activities = pgTable("activities", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // 'browser', 'task', 'focus'
   category: text("category").notNull(),
   title: text("title").notNull(),
-  duration: integer("duration").notNull(), // in minutes
+  duration: integer("duration").notNull(), // in seconds
   metadata: jsonb("metadata"), // additional data like URL, app name, etc.
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
@@ -52,30 +75,30 @@ export const activities = pgTable("activities", {
 });
 
 export const events = pgTable("events", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
+  type: text("type").notNull(), // 'meeting', 'personal', 'work'
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
-  type: text("type").notNull(), // 'meeting', 'personal', 'work'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const focusSessions = pgTable("focus_sessions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // 'focus', 'break'
-  duration: integer("duration").notNull(), // in minutes
-  completedDuration: integer("completed_duration").notNull(), // in minutes
+  duration: integer("duration").notNull(), // planned duration in seconds
+  completedDuration: integer("completed_duration").notNull(), // actual completed duration in seconds
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const browserActivities = pgTable("browser_activities", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   url: text("url").notNull(),
   domain: text("domain").notNull(),
   title: text("title").notNull(),
@@ -87,19 +110,19 @@ export const browserActivities = pgTable("browser_activities", {
 });
 
 export const healthMetrics = pgTable("health_metrics", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // 'steps', 'heartRate', 'calories', 'workout'
   value: integer("value").notNull(),
-  unit: text("unit").notNull(), // 'steps', 'bpm', 'calories', 'minutes'
-  metadata: jsonb("metadata"), // additional data like workout type, etc.
+  unit: text("unit").notNull(),
+  metadata: jsonb("metadata"),
   recordedAt: timestamp("recorded_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const weeklyReports = pgTable("weekly_reports", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   weekStart: timestamp("week_start").notNull(),
   weekEnd: timestamp("week_end").notNull(),
   browserStats: jsonb("browser_stats").notNull(),
@@ -109,12 +132,8 @@ export const weeklyReports = pgTable("weekly_reports", {
 });
 
 // Insert Schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  name: true,
-  email: true,
-});
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
 
 export const insertTaskSchema = createInsertSchema(tasks).pick({
   title: true,
@@ -123,8 +142,6 @@ export const insertTaskSchema = createInsertSchema(tasks).pick({
   priority: true,
   estimatedTime: true,
   dueDate: true,
-}).extend({
-  priority: z.enum(['low', 'medium', 'high']),
 });
 
 export const updateTaskSchema = insertTaskSchema.partial().extend({
@@ -136,8 +153,8 @@ export const updateTaskSchema = insertTaskSchema.partial().extend({
 export const insertNoteSchema = createInsertSchema(notes).pick({
   title: true,
   content: true,
-  tags: true,
   category: true,
+  tags: true,
 });
 
 export const insertActivitySchema = createInsertSchema(activities).pick({
@@ -148,18 +165,14 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   metadata: true,
   startTime: true,
   endTime: true,
-}).extend({
-  type: z.enum(['browser', 'task', 'focus']),
 });
 
 export const insertEventSchema = createInsertSchema(events).pick({
   title: true,
   description: true,
+  type: true,
   startTime: true,
   endTime: true,
-  type: true,
-}).extend({
-  type: z.enum(['meeting', 'personal', 'work']),
 });
 
 export const insertFocusSessionSchema = createInsertSchema(focusSessions).pick({
@@ -168,8 +181,6 @@ export const insertFocusSessionSchema = createInsertSchema(focusSessions).pick({
   completedDuration: true,
   startTime: true,
   endTime: true,
-}).extend({
-  type: z.enum(['focus', 'break']),
 });
 
 export const insertBrowserActivitySchema = createInsertSchema(browserActivities).pick({
@@ -180,8 +191,6 @@ export const insertBrowserActivitySchema = createInsertSchema(browserActivities)
   duration: true,
   startTime: true,
   endTime: true,
-}).extend({
-  category: z.enum(['development', 'learning', 'entertainment', 'social', 'productivity']),
 });
 
 export const insertHealthMetricSchema = createInsertSchema(healthMetrics).pick({
@@ -190,8 +199,6 @@ export const insertHealthMetricSchema = createInsertSchema(healthMetrics).pick({
   unit: true,
   metadata: true,
   recordedAt: true,
-}).extend({
-  type: z.enum(['steps', 'heartRate', 'calories', 'workout']),
 });
 
 export const insertWeeklyReportSchema = createInsertSchema(weeklyReports).pick({
@@ -203,9 +210,6 @@ export const insertWeeklyReportSchema = createInsertSchema(weeklyReports).pick({
 });
 
 // Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
