@@ -23,9 +23,11 @@ The application follows a full-stack architecture with clear separation between 
 - **Development Mode**: Hot reload with Vite middleware integration
 
 ### Database Architecture
-- **Database**: PostgreSQL with Drizzle ORM
-- **Schema Management**: Drizzle Kit for migrations
-- **Connection**: Neon Database serverless PostgreSQL
+- **Database**: PostgreSQL with Drizzle ORM (migrated from in-memory storage)
+- **Schema Management**: Drizzle Kit for migrations and schema synchronization
+- **Connection**: Neon Database serverless PostgreSQL via Replit database module
+- **Data Persistence**: All user data, activities, and metrics are now persistently stored
+- **Demo Data**: Automatic initialization with sample browser activities and health metrics
 
 ## Key Components
 
@@ -121,6 +123,7 @@ The application follows a full-stack architecture with clear separation between 
 
 - June 24, 2025. Initial setup and basic dashboard implementation
 - June 24, 2025. Enhanced with browser activity tracking, Apple Watch integration, smart focus mode, and weekly reporting features
+- June 24, 2025. Migrated from in-memory storage to PostgreSQL database with persistent data storage
 
 ## Recent Changes
 
@@ -130,6 +133,7 @@ The application follows a full-stack architecture with clear separation between 
 ✓ Built weekly report generation with productivity insights and recommendations
 ✓ Enhanced quick capture with voice-to-text functionality
 ✓ Added premium glass design with teal/charcoal color scheme (no purple)
+✓ **Migrated to PostgreSQL database for persistent data storage and scalability**
 
 ## User Preferences
 
