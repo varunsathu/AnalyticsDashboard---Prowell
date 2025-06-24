@@ -11,7 +11,6 @@ import {
   insertBrowserActivitySchema,
   insertHealthMetricSchema,
 } from "@shared/schema";
-
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -30,11 +29,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const userId = "demo-user-id"; // Demo user ID for development
+  // Helper function to get user ID from request
+  const getUserId = (req: any): string => {
+    if (req.user?.claims?.sub) {
+      return req.user.claims.sub;
+    }
+    return "demo-user-id"; // Fallback for development
+  };
 
   // Tasks
-  app.get("/api/tasks", async (req, res) => {
+  app.get("/api/tasks", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const tasks = await storage.getUserTasks(userId);
       res.json(tasks);
     } catch (error) {
@@ -42,8 +48,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", async (req, res) => {
+  app.post("/api/tasks", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const taskData = insertTaskSchema.parse(req.body);
       const task = await storage.createTask(userId, taskData);
       res.json(task);
@@ -52,8 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tasks/:id", async (req, res) => {
+  app.put("/api/tasks/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const taskId = parseInt(req.params.id);
       const taskData = updateTaskSchema.parse({ ...req.body, id: taskId });
       const task = await storage.updateTask(userId, taskData);
@@ -66,37 +74,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tasks/:id", async (req, res) => {
+  app.delete("/api/tasks/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const taskId = parseInt(req.params.id);
       const success = await storage.deleteTask(userId, taskId);
       if (!success) {
         return res.status(404).json({ message: "Task not found" });
       }
-      res.json({ success: true });
+      res.json({ success });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete task" });
     }
   });
 
   // Notes
-  app.get("/api/notes", async (req, res) => {
+  app.get("/api/notes", async (req: any, res) => {
     try {
-      const { search } = req.query;
-      let notes;
-      if (search && typeof search === 'string') {
-        notes = await storage.searchNotes(userId, search);
-      } else {
-        notes = await storage.getUserNotes(userId);
-      }
+      const userId = getUserId(req);
+      const notes = await storage.getUserNotes(userId);
       res.json(notes);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch notes" });
     }
   });
 
-  app.post("/api/notes", async (req, res) => {
+  app.post("/api/notes", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const noteData = insertNoteSchema.parse(req.body);
       const note = await storage.createNote(userId, noteData);
       res.json(note);
@@ -105,10 +110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/notes/:id", async (req, res) => {
+  app.put("/api/notes/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const noteId = parseInt(req.params.id);
-      const noteData = insertNoteSchema.partial().parse(req.body);
+      const noteData = insertNoteSchema.parse(req.body);
       const note = await storage.updateNote(userId, noteId, noteData);
       if (!note) {
         return res.status(404).json({ message: "Note not found" });
@@ -119,34 +125,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/notes/:id", async (req, res) => {
+  app.delete("/api/notes/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const noteId = parseInt(req.params.id);
       const success = await storage.deleteNote(userId, noteId);
       if (!success) {
         return res.status(404).json({ message: "Note not found" });
       }
-      res.json({ success: true });
+      res.json({ success });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete note" });
     }
   });
 
-  // Activities
-  app.get("/api/activities", async (req, res) => {
+  app.get("/api/notes/search", async (req: any, res) => {
     try {
-      const { startDate, endDate } = req.query;
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      const activities = await storage.getUserActivities(userId, start, end);
+      const userId = getUserId(req);
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Query parameter is required" });
+      }
+      const notes = await storage.searchNotes(userId, query);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search notes" });
+    }
+  });
+
+  // Activities
+  app.get("/api/activities", async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const activities = await storage.getUserActivities(userId, startDate, endDate);
       res.json(activities);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch activities" });
     }
   });
 
-  app.post("/api/activities", async (req, res) => {
+  app.post("/api/activities", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const activityData = insertActivitySchema.parse(req.body);
       const activity = await storage.createActivity(userId, activityData);
       res.json(activity);
@@ -155,11 +177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/activities/stats", async (req, res) => {
+  app.get("/api/activities/stats", async (req: any, res) => {
     try {
-      const { date } = req.query;
-      const statsDate = date ? new Date(date as string) : new Date();
-      const stats = await storage.getActivityStats(userId, statsDate);
+      const userId = getUserId(req);
+      const date = req.query.date ? new Date(req.query.date as string) : new Date();
+      const stats = await storage.getActivityStats(userId, date);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch activity stats" });
@@ -167,20 +189,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events
-  app.get("/api/events", async (req, res) => {
+  app.get("/api/events", async (req: any, res) => {
     try {
-      const { startDate, endDate } = req.query;
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      const events = await storage.getUserEvents(userId, start, end);
+      const userId = getUserId(req);
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const events = await storage.getUserEvents(userId, startDate, endDate);
       res.json(events);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch events" });
     }
   });
 
-  app.post("/api/events", async (req, res) => {
+  app.post("/api/events", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const eventData = insertEventSchema.parse(req.body);
       const event = await storage.createEvent(userId, eventData);
       res.json(event);
@@ -189,10 +212,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/events/:id", async (req, res) => {
+  app.put("/api/events/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const eventId = parseInt(req.params.id);
-      const eventData = insertEventSchema.partial().parse(req.body);
+      const eventData = insertEventSchema.parse(req.body);
       const event = await storage.updateEvent(userId, eventId, eventData);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
@@ -203,71 +227,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/events/:id", async (req, res) => {
+  app.delete("/api/events/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const eventId = parseInt(req.params.id);
       const success = await storage.deleteEvent(userId, eventId);
       if (!success) {
         return res.status(404).json({ message: "Event not found" });
       }
-      res.json({ success: true });
+      res.json({ success });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete event" });
     }
   });
 
   // Focus Sessions
-  app.get("/api/focus-sessions", async (req, res) => {
+  app.get("/api/focus-sessions", async (req: any, res) => {
     try {
-      const { startDate, endDate } = req.query;
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      const sessions = await storage.getUserFocusSessions(userId, start, end);
+      const userId = getUserId(req);
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const sessions = await storage.getUserFocusSessions(userId, startDate, endDate);
       res.json(sessions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch focus sessions" });
     }
   });
 
-  app.post("/api/focus-sessions", async (req, res) => {
+  app.post("/api/focus-sessions", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const sessionData = insertFocusSessionSchema.parse(req.body);
       const session = await storage.createFocusSession(userId, sessionData);
       res.json(session);
     } catch (error) {
-      res.status(400).json({ message: "Invalid focus session data" });
+      res.status(400).json({ message: "Invalid session data" });
     }
   });
 
-  app.put("/api/focus-sessions/:id", async (req, res) => {
+  app.put("/api/focus-sessions/:id", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const sessionId = parseInt(req.params.id);
-      const sessionData = insertFocusSessionSchema.partial().parse(req.body);
+      const sessionData = insertFocusSessionSchema.parse(req.body);
       const session = await storage.updateFocusSession(userId, sessionId, sessionData);
       if (!session) {
-        return res.status(404).json({ message: "Focus session not found" });
+        return res.status(404).json({ message: "Session not found" });
       }
       res.json(session);
     } catch (error) {
-      res.status(400).json({ message: "Invalid focus session data" });
+      res.status(400).json({ message: "Invalid session data" });
     }
   });
 
   // Browser Activities
-  app.get("/api/browser-activities", async (req, res) => {
+  app.get("/api/browser-activities", async (req: any, res) => {
     try {
-      const { startDate, endDate } = req.query;
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      const activities = await storage.getUserBrowserActivities(userId, start, end);
+      const userId = getUserId(req);
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const activities = await storage.getUserBrowserActivities(userId, startDate, endDate);
       res.json(activities);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch browser activities" });
     }
   });
 
-  app.post("/api/browser-activities", async (req, res) => {
+  app.post("/api/browser-activities", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const activityData = insertBrowserActivitySchema.parse(req.body);
       const activity = await storage.createBrowserActivity(userId, activityData);
       res.json(activity);
@@ -276,11 +304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/browser-activities/stats", async (req, res) => {
+  app.get("/api/browser-activities/stats", async (req: any, res) => {
     try {
-      const { date } = req.query;
-      const statsDate = date ? new Date(date as string) : new Date();
-      const stats = await storage.getBrowserActivityStats(userId, statsDate);
+      const userId = getUserId(req);
+      const date = req.query.date ? new Date(req.query.date as string) : new Date();
+      const stats = await storage.getBrowserActivityStats(userId, date);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch browser activity stats" });
@@ -288,20 +316,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Health Metrics
-  app.get("/api/health-metrics", async (req, res) => {
+  app.get("/api/health-metrics", async (req: any, res) => {
     try {
-      const { type, startDate, endDate } = req.query;
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
-      const metrics = await storage.getUserHealthMetrics(userId, type as string, start, end);
+      const userId = getUserId(req);
+      const type = req.query.type as string;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const metrics = await storage.getUserHealthMetrics(userId, type, startDate, endDate);
       res.json(metrics);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch health metrics" });
     }
   });
 
-  app.post("/api/health-metrics", async (req, res) => {
+  app.post("/api/health-metrics", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const metricData = insertHealthMetricSchema.parse(req.body);
       const metric = await storage.createHealthMetric(userId, metricData);
       res.json(metric);
@@ -310,8 +340,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/health-metrics/latest", async (req, res) => {
+  app.get("/api/health-metrics/latest", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const metrics = await storage.getLatestHealthMetrics(userId);
       res.json(metrics);
     } catch (error) {
@@ -320,20 +351,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly Reports
-  app.get("/api/weekly-reports", async (req, res) => {
+  app.get("/api/weekly-reports", async (req: any, res) => {
     try {
-      const { limit } = req.query;
-      const reports = await storage.getUserWeeklyReports(userId, limit ? parseInt(limit as string) : undefined);
+      const userId = getUserId(req);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const reports = await storage.getUserWeeklyReports(userId, limit);
       res.json(reports);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch weekly reports" });
     }
   });
 
-  app.post("/api/weekly-reports/generate", async (req, res) => {
+  app.post("/api/weekly-reports/generate", async (req: any, res) => {
     try {
-      const { weekStart } = req.body;
-      const report = await storage.generateWeeklyReport(userId, new Date(weekStart));
+      const userId = getUserId(req);
+      const weekStart = new Date(req.body.weekStart);
+      const report = await storage.generateWeeklyReport(userId, weekStart);
       res.json(report);
     } catch (error) {
       res.status(500).json({ message: "Failed to generate weekly report" });
@@ -341,47 +374,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
+  app.get("/api/dashboard/stats", async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const [tasks, activities, focusSessions, browserStats, healthMetrics] = await Promise.all([
-        storage.getUserTasks(userId),
-        storage.getUserActivities(userId, startOfDay, endOfDay),
-        storage.getUserFocusSessions(userId, startOfDay, endOfDay),
+      const [activityStats, browserStats, tasks, events] = await Promise.all([
+        storage.getActivityStats(userId, today),
         storage.getBrowserActivityStats(userId, today),
-        storage.getLatestHealthMetrics(userId),
+        storage.getUserTasks(userId),
+        storage.getUserEvents(userId, today, today)
       ]);
 
-      const completedTasks = tasks.filter(task => task.status === 'completed');
-      const totalTasks = tasks.length;
-      const todayCompletedTasks = completedTasks.filter(task => 
-        task.completedAt && 
-        task.completedAt >= startOfDay && 
-        task.completedAt <= endOfDay
-      ).length;
+      const stats = {
+        todayStats: {
+          ...activityStats,
+          ...browserStats,
+        },
+        taskStats: {
+          total: tasks.length,
+          completed: tasks.filter(t => t.status === 'completed').length,
+          pending: tasks.filter(t => t.status === 'pending').length,
+        },
+        upcomingEvents: events.length,
+      };
 
-      const focusTime = focusSessions
-        .filter(session => session.type === 'focus')
-        .reduce((sum, session) => sum + session.completedDuration, 0);
-
-      const activityStats = await storage.getActivityStats(userId, today);
-
-      res.json({
-        focusTime: Math.floor(focusTime), // in minutes
-        tasksCompleted: todayCompletedTasks,
-        totalTasks,
-        weeklyGoals: 4, // Mock data for weekly goals
-        totalWeeklyGoals: 7,
-        productivityScore: browserStats.productivityScore || Math.min(100, Math.round((focusTime / 240) * 100)),
-        activityStats,
-        browserStats,
-        healthMetrics,
-      });
+      res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
     }
