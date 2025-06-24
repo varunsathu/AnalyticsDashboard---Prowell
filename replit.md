@@ -1,0 +1,126 @@
+# Productivity Dashboard Application
+
+## Overview
+
+A comprehensive productivity dashboard application built with React, TypeScript, Express.js, and PostgreSQL. The application provides task management, activity tracking, note-taking, focus timers, and calendar integration features to help users optimize their daily productivity.
+
+## System Architecture
+
+The application follows a full-stack architecture with clear separation between client and server components:
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack Query for server state management
+- **UI Components**: Shadcn/ui components built on Radix UI primitives
+- **Styling**: Tailwind CSS with custom design system
+- **Build Tool**: Vite for fast development and optimized builds
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **API Design**: RESTful API endpoints
+- **Development Mode**: Hot reload with Vite middleware integration
+
+### Database Architecture
+- **Database**: PostgreSQL with Drizzle ORM
+- **Schema Management**: Drizzle Kit for migrations
+- **Connection**: Neon Database serverless PostgreSQL
+
+## Key Components
+
+### Task Management System
+- Task creation, editing, and deletion
+- Priority levels (low, medium, high)
+- Category organization (work, personal, learning)
+- Status tracking (pending, completed)
+- Time estimation and tracking
+- Due date management
+
+### Activity Tracking
+- Automatic activity categorization
+- Time spent analysis
+- Productivity metrics and statistics
+- Daily, weekly, and monthly reporting
+
+### Smart Notes System
+- Rich text note creation and editing
+- Tag-based organization
+- Search functionality
+- Category classification
+- Timestamp tracking
+
+### Focus Timer (Pomodoro)
+- 25-minute focus sessions
+- Break time management
+- Session completion tracking
+- Progress visualization
+- Focus mode overlay
+
+### Calendar Integration
+- Event scheduling and management
+- Daily agenda view
+- Event categorization
+- Time conflict detection
+
+### Quick Capture Modal
+- Voice-to-text input support
+- Rapid task and note creation
+- Smart categorization
+- Keyboard shortcuts
+
+## Data Flow
+
+1. **Client Requests**: React components use TanStack Query to make API requests
+2. **API Processing**: Express.js routes handle requests and validate data using Zod schemas
+3. **Database Operations**: Drizzle ORM performs type-safe database operations
+4. **Response Handling**: Data flows back through the API to update client state
+5. **UI Updates**: React components re-render based on updated query cache
+
+## External Dependencies
+
+### Core Dependencies
+- **@tanstack/react-query**: Server state management and caching
+- **drizzle-orm**: Type-safe database ORM
+- **@neondatabase/serverless**: PostgreSQL serverless connection
+- **wouter**: Lightweight routing library
+- **date-fns**: Date manipulation and formatting
+
+### UI Dependencies
+- **@radix-ui/***: Accessible UI primitives
+- **tailwindcss**: Utility-first CSS framework
+- **class-variance-authority**: Component variant management
+- **lucide-react**: Icon library
+
+### Development Dependencies
+- **vite**: Fast build tool and dev server
+- **typescript**: Type safety and development experience
+- **tsx**: TypeScript execution for Node.js
+- **esbuild**: Fast JavaScript bundler for production
+
+## Deployment Strategy
+
+### Development Environment
+- Replit-optimized configuration with hot reload
+- Vite dev server with Express.js middleware integration
+- PostgreSQL database provisioning through Replit modules
+- Environment variable management for database connections
+
+### Production Build
+- Frontend: Vite builds optimized React application
+- Backend: esbuild bundles Express.js server with external dependencies
+- Database: Drizzle migrations ensure schema consistency
+- Deployment: Replit autoscale deployment with health checks
+
+### Environment Configuration
+- Database URL configuration through environment variables
+- Port configuration for Replit deployment (5000 -> 80)
+- Build scripts optimized for production deployment
+
+## Changelog
+
+- June 24, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
