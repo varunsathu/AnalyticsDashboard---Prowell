@@ -350,6 +350,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/health-metrics/sync", async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { deviceType, source } = req.body;
+      
+      // Simulate device sync - in production, this would integrate with actual APIs
+      const mockData = await storage.simulateDeviceSync(userId, source);
+      res.json({ success: true, syncedMetrics: mockData.length, source });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to sync health data" });
+    }
+  });
+
   // Weekly Reports
   app.get("/api/weekly-reports", async (req: any, res) => {
     try {

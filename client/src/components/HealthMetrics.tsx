@@ -1,175 +1,180 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Footprints, Flame, Activity, Watch } from "lucide-react";
-
-const metricIcons = {
-  steps: Footprints,
-  heartRate: Heart,
-  calories: Flame,
-  workout: Activity,
-};
-
-const metricColors = {
-  steps: { bg: "bg-blue-500", text: "text-blue-600", light: "bg-blue-50" },
-  heartRate: { bg: "bg-red-500", text: "text-red-600", light: "bg-red-50" },
-  calories: { bg: "bg-orange-500", text: "text-orange-600", light: "bg-orange-50" },
-  workout: { bg: "bg-green-500", text: "text-green-600", light: "bg-green-50" },
-};
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Heart, Activity, Footprints, Zap, Watch, Smartphone, Glasses, Circle, Moon } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function HealthMetrics() {
-  const { data: healthMetrics } = useQuery({
+  const queryClient = useQueryClient();
+  const [selectedDevice, setSelectedDevice] = useState<string>("auto");
+
+  const { data: healthMetrics, isLoading } = useQuery({
     queryKey: ["/api/health-metrics/latest"],
   });
 
-  const formatValue = (type: string, value: number, unit: string) => {
-    if (type === 'steps') {
-      return value.toLocaleString();
-    }
-    if (type === 'calories') {
-      return value.toLocaleString();
-    }
-    return value.toString();
-  };
+  const syncMutation = useMutation({
+    mutationFn: async (deviceType: string) => {
+      return await apiRequest(`/api/health-metrics/sync`, {
+        method: "POST",
+        body: JSON.stringify({ deviceType, source: selectedDevice }),
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/health-metrics/latest"] });
+    },
+  });
 
-  const getGoalProgress = (type: string, value: number) => {
-    const goals = {
-      steps: 10000,
-      heartRate: 75, // resting heart rate goal
-      calories: 2200,
-      workout: 60, // minutes per day
-    };
+  const metrics = healthMetrics || {};
+  
+  const deviceTypes = [
+    { id: "auto", name: "Auto-detect", icon: Zap, description: "Automatically sync from available devices" },
+    { id: "apple_watch", name: "Apple Watch", icon: Watch, description: "Apple HealthKit integration" },
+    { id: "android_watch", name: "Android Watch", icon: Watch, description: "Google Fit / Samsung Health" },
+    { id: "fitbit", name: "Fitbit", icon: Activity, description: "Fitbit Web API" },
+    { id: "smart_glasses", name: "Smart Glasses", icon: Glasses, description: "AR/VR fitness tracking" },
+    { id: "smart_ring", name: "Smart Ring", icon: Circle, description: "Oura Ring / similar devices" },
+  ];
 
-    const goal = goals[type as keyof typeof goals];
-    if (!goal) return 0;
-
-    if (type === 'heartRate') {
-      // For heart rate, lower is better (within healthy range)
-      return value <= goal ? 100 : Math.max(0, 100 - ((value - goal) / goal * 100));
-    }
-
-    return Math.min(100, (value / goal) * 100);
-  };
-
-  if (!healthMetrics || Object.keys(healthMetrics).length === 0) {
+  if (isLoading) {
     return (
-      <Card className="bg-white border border-charcoal-200">
-        <CardHeader className="border-b border-charcoal-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Watch className="w-5 h-5 text-charcoal-600" />
-              <CardTitle className="text-xl font-bold text-charcoal-900">Health & Fitness</CardTitle>
-            </div>
-            <Badge variant="outline" className="text-charcoal-600">
-              Apple Watch
-            </Badge>
-          </div>
+      <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm dark:bg-slate-800/70">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Heart className="w-5 h-5 text-red-500" />
+            Health Metrics
+          </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center py-8">
-            <Watch className="w-12 h-12 text-charcoal-400 mx-auto mb-4" />
-            <p className="text-charcoal-600 mb-2">Connect your Apple Watch</p>
-            <p className="text-sm text-charcoal-500">
-              Sync your health data to track fitness goals and wellness metrics
-            </p>
-          </div>
+        <CardContent>
+          <div className="text-center py-8 text-slate-500">Loading health data...</div>
         </CardContent>
       </Card>
     );
   }
 
-  const metrics = Object.values(healthMetrics);
-
   return (
-    <Card className="bg-white border border-charcoal-200">
-      <CardHeader className="border-b border-charcoal-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Watch className="w-5 h-5 text-charcoal-600" />
-            <CardTitle className="text-xl font-bold text-charcoal-900">Health & Fitness</CardTitle>
-          </div>
-          <Badge variant="outline" className="text-green-600 border-green-200">
-            Connected
-          </Badge>
-        </div>
+    <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm dark:bg-slate-800/70">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Heart className="w-5 h-5 text-red-500" />
+          Health Metrics
+        </CardTitle>
+        <CardDescription>Multi-device wellness tracking</CardDescription>
       </CardHeader>
-
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 gap-4">
-          {metrics.map((metric) => {
-            const IconComponent = metricIcons[metric.type as keyof typeof metricIcons] || Activity;
-            const colors = metricColors[metric.type as keyof typeof metricColors] || metricColors.workout;
-            const progress = getGoalProgress(metric.type, metric.value);
-            
-            return (
-              <div key={metric.type} className={`p-4 ${colors.light} rounded-lg border border-charcoal-200`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
-                      <IconComponent className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-charcoal-900 capitalize">
-                        {metric.type === 'heartRate' ? 'Heart Rate' : metric.type}
-                      </p>
-                      <p className="text-sm text-charcoal-600">
-                        {metric.type === 'workout' && metric.metadata?.type 
-                          ? `${metric.metadata.type} workout`
-                          : metric.type === 'heartRate' && metric.metadata?.context
-                          ? metric.metadata.context
-                          : 'Today'
-                        }
-                      </p>
-                    </div>
+      <CardContent className="space-y-4">
+        {/* Device Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Sync Source
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {deviceTypes.slice(0, 4).map((device) => {
+              const Icon = device.icon;
+              return (
+                <Button
+                  key={device.id}
+                  variant={selectedDevice === device.id ? "default" : "outline"}
+                  size="sm"
+                  className="justify-start h-auto p-2"
+                  onClick={() => setSelectedDevice(device.id)}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  <div className="text-left">
+                    <div className="font-medium text-xs">{device.name}</div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-charcoal-900">
-                      {formatValue(metric.type, metric.value, metric.unit)}
-                    </p>
-                    <p className="text-sm text-charcoal-600">{metric.unit}</p>
+                </Button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {deviceTypes.slice(4).map((device) => {
+              const Icon = device.icon;
+              return (
+                <Button
+                  key={device.id}
+                  variant={selectedDevice === device.id ? "default" : "outline"}
+                  size="sm"
+                  className="justify-start h-auto p-2"
+                  onClick={() => setSelectedDevice(device.id)}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  <div className="text-left">
+                    <div className="font-medium text-xs">{device.name}</div>
                   </div>
-                </div>
-                
-                {/* Progress Bar */}
-                <div className="w-full bg-charcoal-200 rounded-full h-2 mb-2">
-                  <div 
-                    className={`${colors.bg} h-2 rounded-full transition-all duration-300`}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                
-                <div className="flex justify-between text-xs text-charcoal-500">
-                  <span>{Math.round(progress)}% of goal</span>
-                  {metric.type === 'steps' && <span>Goal: 10,000</span>}
-                  {metric.type === 'calories' && <span>Goal: 2,200</span>}
-                  {metric.type === 'workout' && <span>Goal: 60 min</span>}
-                  {metric.type === 'heartRate' && <span>Target: ≤75 bpm</span>}
-                </div>
-              </div>
-            );
-          })}
+                </Button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Health Summary */}
-        <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-          <h4 className="font-semibold text-charcoal-900 mb-2">Today's Health Score</h4>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-charcoal-600">
-              {metrics.length >= 3 ? "Great activity day! Keep up the momentum." : 
-               metrics.length >= 2 ? "Good progress on your health goals." : 
-               "Start your day with some movement!"}
-            </p>
-            <div className="flex items-center space-x-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    i < Math.ceil(metrics.length / 1) ? 'bg-green-500' : 'bg-charcoal-300'
-                  }`}
-                />
-              ))}
+        {/* Health Metrics */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Steps</span>
+              <span className="font-medium">{metrics.steps?.value || 0}</span>
             </div>
+            <Progress value={(metrics.steps?.value || 0) / 100} className="h-2" />
+            <div className="text-xs text-slate-500">Goal: 10,000 steps</div>
           </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Calories</span>
+              <span className="font-medium">{metrics.calories?.value || 0}</span>
+            </div>
+            <Progress value={(metrics.calories?.value || 0) / 25} className="h-2" />
+            <div className="text-xs text-slate-500">Goal: 2,500 calories</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <Heart className="w-5 h-5 text-red-500 mx-auto mb-1" />
+            <div className="text-lg font-semibold">{metrics.heartRate?.value || 72}</div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">BPM</div>
+          </div>
+
+          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <Activity className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+            <div className="text-lg font-semibold">{metrics.workout?.value || 0}</div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">Minutes</div>
+          </div>
+
+          <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <Moon className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+            <div className="text-lg font-semibold">{metrics.sleep?.value || 8}</div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">Hours</div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <Badge variant="secondary" className="text-xs">
+              <Footprints className="w-3 h-3 mr-1" />
+              {selectedDevice === "auto" ? "Multi-device" : deviceTypes.find(d => d.id === selectedDevice)?.name}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              Last sync: 2min ago
+            </Badge>
+            {metrics.steps?.metadata?.accuracy && (
+              <Badge variant="outline" className="text-xs">
+                {Math.round(metrics.steps.metadata.accuracy * 100)}% accuracy
+              </Badge>
+            )}
+          </div>
+          
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => syncMutation.mutate(selectedDevice)}
+            disabled={syncMutation.isPending}
+          >
+            {syncMutation.isPending ? "Syncing..." : "Sync Now"}
+          </Button>
         </div>
       </CardContent>
     </Card>

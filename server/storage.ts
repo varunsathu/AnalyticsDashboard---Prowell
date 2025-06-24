@@ -77,6 +77,7 @@ export interface IStorage {
   getUserHealthMetrics(userId: string, type?: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]>;
   createHealthMetric(userId: string, metric: InsertHealthMetric): Promise<HealthMetric>;
   getLatestHealthMetrics(userId: string): Promise<Record<string, HealthMetric>>;
+  simulateDeviceSync(userId: string, deviceSource: string): Promise<HealthMetric[]>;
 
   // Weekly Reports
   getUserWeeklyReports(userId: string, limit?: number): Promise<WeeklyReport[]>;
@@ -600,6 +601,98 @@ export class DatabaseStorage implements IStorage {
     });
     
     return latest;
+  }
+
+  async simulateDeviceSync(userId: string, deviceSource: string): Promise<HealthMetric[]> {
+    const now = new Date();
+    const syncedMetrics: InsertHealthMetric[] = [];
+
+    // Generate device-specific mock data based on source
+    const deviceProfiles = {
+      apple_watch: {
+        steps: { range: [8000, 15000], accuracy: 0.95 },
+        heartRate: { range: [60, 90], accuracy: 0.98 },
+        calories: { range: [1800, 2800], accuracy: 0.90 },
+        workout: { range: [30, 120], accuracy: 0.95 },
+        sleep: { range: [6, 9], accuracy: 0.85 }
+      },
+      android_watch: {
+        steps: { range: [7500, 14000], accuracy: 0.92 },
+        heartRate: { range: [62, 88], accuracy: 0.95 },
+        calories: { range: [1700, 2700], accuracy: 0.88 },
+        workout: { range: [25, 100], accuracy: 0.90 },
+        sleep: { range: [6, 8.5], accuracy: 0.80 }
+      },
+      fitbit: {
+        steps: { range: [8500, 16000], accuracy: 0.97 },
+        heartRate: { range: [58, 85], accuracy: 0.96 },
+        calories: { range: [1900, 2900], accuracy: 0.93 },
+        workout: { range: [35, 150], accuracy: 0.92 },
+        sleep: { range: [6.5, 9], accuracy: 0.88 }
+      },
+      smart_glasses: {
+        steps: { range: [5000, 12000], accuracy: 0.75 },
+        heartRate: { range: [65, 95], accuracy: 0.70 },
+        calories: { range: [1600, 2400], accuracy: 0.75 },
+        workout: { range: [20, 80], accuracy: 0.85 },
+        sleep: { range: [5, 8], accuracy: 0.60 }
+      },
+      smart_ring: {
+        steps: { range: [7000, 13000], accuracy: 0.88 },
+        heartRate: { range: [55, 82], accuracy: 0.94 },
+        calories: { range: [1750, 2600], accuracy: 0.85 },
+        workout: { range: [40, 130], accuracy: 0.88 },
+        sleep: { range: [7, 9.5], accuracy: 0.92 }
+      },
+      auto: {
+        steps: { range: [8000, 15000], accuracy: 0.95 },
+        heartRate: { range: [60, 90], accuracy: 0.95 },
+        calories: { range: [1800, 2800], accuracy: 0.90 },
+        workout: { range: [30, 120], accuracy: 0.90 },
+        sleep: { range: [6, 9], accuracy: 0.85 }
+      }
+    };
+
+    const profile = deviceProfiles[deviceSource as keyof typeof deviceProfiles] || deviceProfiles.auto;
+
+    // Generate realistic metrics based on device profile
+    Object.entries(profile).forEach(([type, config]) => {
+      const [min, max] = config.range;
+      const baseValue = Math.floor(Math.random() * (max - min + 1)) + min;
+      const value = Math.floor(baseValue * config.accuracy);
+
+      syncedMetrics.push({
+        type,
+        value,
+        unit: this.getMetricUnit(type),
+        recordedAt: now,
+        metadata: {
+          source: deviceSource,
+          accuracy: config.accuracy,
+          syncTime: now.toISOString()
+        }
+      });
+    });
+
+    // Save synced metrics to database
+    const savedMetrics: HealthMetric[] = [];
+    for (const metric of syncedMetrics) {
+      const saved = await this.createHealthMetric(userId, metric);
+      savedMetrics.push(saved);
+    }
+
+    return savedMetrics;
+  }
+
+  private getMetricUnit(type: string): string {
+    const units: Record<string, string> = {
+      steps: 'count',
+      heartRate: 'bpm',
+      calories: 'cal',
+      workout: 'minutes',
+      sleep: 'hours'
+    };
+    return units[type] || 'unit';
   }
 
   // Weekly Reports

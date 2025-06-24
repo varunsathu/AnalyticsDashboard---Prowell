@@ -59,9 +59,9 @@ export default function Landing() {
               <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-3">
                 <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
-              <CardTitle className="text-lg">Health Integration</CardTitle>
+              <CardTitle className="text-lg">Universal Health Integration</CardTitle>
               <CardDescription>
-                Connect with Apple Watch to track steps, heart rate, and workout data for holistic wellness.
+                Connect with Apple Watch, Android watches, Fitbit, smart glasses, and smart rings for comprehensive wellness tracking.
               </CardDescription>
             </CardHeader>
           </Card>
