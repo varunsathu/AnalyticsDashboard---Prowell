@@ -5,6 +5,7 @@ import {
   timestamp,
   jsonb,
   text,
+  boolean,
   index,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -131,6 +132,24 @@ export const weeklyReports = pgTable("weekly_reports", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const journalEntries = pgTable("journal_entries", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  date: varchar("date").notNull(),
+  title: varchar("title", { length: 255 }),
+  content: text("content").notNull(),
+  mood: varchar("mood", { length: 50 }),
+  tags: text("tags").array(),
+  weather: varchar("weather", { length: 100 }),
+  highlights: text("highlights"),
+  gratitude: text("gratitude"),
+  challenges: text("challenges"),
+  tomorrowGoals: text("tomorrow_goals"),
+  isPrivate: boolean("is_private").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert Schemas
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -209,6 +228,15 @@ export const insertWeeklyReportSchema = createInsertSchema(weeklyReports).pick({
   recommendations: true,
 });
 
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateJournalEntrySchema = insertJournalEntrySchema.partial();
+
 // Types
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
@@ -234,3 +262,7 @@ export type InsertHealthMetric = z.infer<typeof insertHealthMetricSchema>;
 
 export type WeeklyReport = typeof weeklyReports.$inferSelect;
 export type InsertWeeklyReport = z.infer<typeof insertWeeklyReportSchema>;
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+export type UpdateJournalEntry = z.infer<typeof updateJournalEntrySchema>;

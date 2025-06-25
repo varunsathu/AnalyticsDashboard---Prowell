@@ -568,6 +568,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Journal Entries
+  app.get("/api/journal", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { limit } = req.query;
+      const entries = await storage.getUserJournalEntries(
+        userId,
+        limit ? parseInt(limit as string) : undefined
+      );
+      res.json(entries);
+    } catch (error) {
+      console.error('Error fetching journal entries:', error);
+      res.status(500).json({ message: "Failed to fetch journal entries" });
+    }
+  });
+
+  app.get("/api/journal/:date", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { date } = req.params;
+      const entry = await storage.getJournalEntry(userId, date);
+      if (!entry) {
+        return res.status(404).json({ message: "Journal entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      console.error('Error fetching journal entry:', error);
+      res.status(500).json({ message: "Failed to fetch journal entry" });
+    }
+  });
+
+  app.post("/api/journal", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const entry = await storage.createJournalEntry(userId, req.body);
+      res.json(entry);
+    } catch (error) {
+      console.error('Error creating journal entry:', error);
+      res.status(500).json({ message: "Failed to create journal entry" });
+    }
+  });
+
+  app.patch("/api/journal/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { id } = req.params;
+      const entry = await storage.updateJournalEntry(userId, parseInt(id), req.body);
+      if (!entry) {
+        return res.status(404).json({ message: "Journal entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      console.error('Error updating journal entry:', error);
+      res.status(500).json({ message: "Failed to update journal entry" });
+    }
+  });
+
+  app.delete("/api/journal/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { id } = req.params;
+      const success = await storage.deleteJournalEntry(userId, parseInt(id));
+      if (!success) {
+        return res.status(404).json({ message: "Journal entry not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting journal entry:', error);
+      res.status(500).json({ message: "Failed to delete journal entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -8,6 +8,7 @@ import {
   browserActivities,
   healthMetrics,
   weeklyReports,
+  journalEntries,
   type User,
   type UpsertUser,
   type Task,
@@ -27,6 +28,9 @@ import {
   type InsertHealthMetric,
   type WeeklyReport,
   type InsertWeeklyReport,
+  type JournalEntry,
+  type InsertJournalEntry,
+  type UpdateJournalEntry,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, sql } from "drizzle-orm";
@@ -83,6 +87,13 @@ export interface IStorage {
   getUserWeeklyReports(userId: string, limit?: number): Promise<WeeklyReport[]>;
   createWeeklyReport(userId: string, report: InsertWeeklyReport): Promise<WeeklyReport>;
   generateWeeklyReport(userId: string, weekStart: Date): Promise<WeeklyReport>;
+
+  // Journal Entries
+  getUserJournalEntries(userId: string, limit?: number): Promise<JournalEntry[]>;
+  getJournalEntry(userId: string, date: string): Promise<JournalEntry | undefined>;
+  createJournalEntry(userId: string, entry: InsertJournalEntry): Promise<JournalEntry>;
+  updateJournalEntry(userId: string, id: number, entry: UpdateJournalEntry): Promise<JournalEntry | undefined>;
+  deleteJournalEntry(userId: string, id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -825,6 +836,69 @@ export class DatabaseStorage implements IStorage {
     }
 
     return recommendations;
+  }
+
+  // Journal Entries
+  async getUserJournalEntries(userId: string, limit: number = 30): Promise<JournalEntry[]> {
+    const entries = await db
+      .select()
+      .from(journalEntries)
+      .where(eq(journalEntries.userId, userId))
+      .orderBy(desc(journalEntries.date))
+      .limit(limit);
+    
+    return entries;
+  }
+
+  async getJournalEntry(userId: string, date: string): Promise<JournalEntry | undefined> {
+    const [entry] = await db
+      .select()
+      .from(journalEntries)
+      .where(and(
+        eq(journalEntries.userId, userId),
+        eq(journalEntries.date, date)
+      ));
+    
+    return entry;
+  }
+
+  async createJournalEntry(userId: string, insertEntry: InsertJournalEntry): Promise<JournalEntry> {
+    const [entry] = await db
+      .insert(journalEntries)
+      .values({
+        ...insertEntry,
+        userId,
+      })
+      .returning();
+    
+    return entry;
+  }
+
+  async updateJournalEntry(userId: string, entryId: number, updateEntry: UpdateJournalEntry): Promise<JournalEntry | undefined> {
+    const [entry] = await db
+      .update(journalEntries)
+      .set({
+        ...updateEntry,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(journalEntries.id, entryId),
+        eq(journalEntries.userId, userId)
+      ))
+      .returning();
+    
+    return entry;
+  }
+
+  async deleteJournalEntry(userId: string, entryId: number): Promise<boolean> {
+    const result = await db
+      .delete(journalEntries)
+      .where(and(
+        eq(journalEntries.id, entryId),
+        eq(journalEntries.userId, userId)
+      ));
+    
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
