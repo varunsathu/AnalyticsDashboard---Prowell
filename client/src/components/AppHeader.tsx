@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Plus, Settings, Moon, Sun, LogOut, Zap, Brain, Palette, ChevronDown } from "lucide-react";
+import { Plus, Settings, LogOut, Zap, Brain, Palette, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppHeaderProps {
@@ -20,29 +20,11 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode }: AppHeaderProps) {
   const { user } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const handleLogout = () => {
     // Redirect to logout endpoint
     window.location.href = '/auth/logout';
   };
-
-  const toggleTheme = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    document.documentElement.classList.toggle('dark', newMode);
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
-  };
-
-  // Initialize theme on load
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-    
-    setIsDarkMode(shouldBeDark);
-    document.documentElement.classList.toggle('dark', shouldBeDark);
-  }, []);
 
   const getGreeting = () => {
     // Get current time in user's local timezone (browser automatically handles this)
@@ -198,11 +180,6 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>Settings</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem onClick={toggleTheme}>
-                    {isDarkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                    {isDarkMode ? 'Light Theme' : 'Dark Theme'}
-                  </DropdownMenuItem>
                   
                   <DropdownMenuItem>
                     <Brain className="mr-2 h-4 w-4" />
