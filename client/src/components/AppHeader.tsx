@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Settings, LogOut, Zap, Brain, Palette } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface AppHeaderProps {
   onQuickCapture: () => void;
@@ -20,10 +21,39 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode }: AppHeaderProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const handleLogout = () => {
-    // Redirect to logout endpoint
-    window.location.href = '/auth/logout';
+    // Redirect to home page (root)
+    window.location.href = '/';
+  };
+
+  const handleFocusPresets = () => {
+    toast({
+      title: "Focus Presets",
+      description: "Choose from Deep Work, Creative Flow, Study Mode, or Custom settings",
+    });
+  };
+
+  const handleProductivityInsights = () => {
+    toast({
+      title: "Productivity Insights",
+      description: "View your daily productivity patterns, focus time trends, and optimization suggestions",
+    });
+  };
+
+  const handleAmbientSounds = () => {
+    toast({
+      title: "Ambient Sounds",
+      description: "Choose from nature sounds, white noise, or instrumental music to enhance focus",
+    });
+  };
+
+  const handlePreferences = () => {
+    toast({
+      title: "Preferences",
+      description: "Customize notifications, work hours, break intervals, and dashboard layout",
+    });
   };
 
   const getGreeting = () => {
@@ -205,22 +235,22 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFocusPresets}>
                   <Brain className="mr-2 h-4 w-4" />
                   Focus Presets
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleProductivityInsights}>
                   <Zap className="mr-2 h-4 w-4" />
                   Productivity Insights
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleAmbientSounds}>
                   <Palette className="mr-2 h-4 w-4" />
                   Ambient Sounds
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePreferences}>
                   <Settings className="mr-2 h-4 w-4" />
                   Preferences
                 </DropdownMenuItem>
