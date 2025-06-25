@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, FileText, Plus, Files } from "lucide-react";
+import { Save, FileText, Plus, Files, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Note, InsertNote } from "@shared/schema";
@@ -72,6 +72,29 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
     },
   });
 
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/notes/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      handleNewNote(); // Clear the form after deletion
+      toast({
+        title: "Note deleted",
+        description: "Your note has been deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete failed",
+        description: "Could not delete your note",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Auto-save functionality
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -128,7 +151,16 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
     }
   };
 
+  const handleDeleteNote = () => {
+    if (currentNoteId && !isCreating) {
+      if (confirm("Are you sure you want to delete this note?")) {
+        deleteNoteMutation.mutate(currentNoteId);
+      }
+    }
+  };
+
   const isSaving = createNoteMutation.isPending || updateNoteMutation.isPending;
+  const isDeleting = deleteNoteMutation.isPending;
   const currentNote = currentNoteId ? notes.find(n => n.id === currentNoteId) : null;
 
   return (
@@ -178,6 +210,18 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
               <Save className="w-3 h-3 mr-1" />
               {isSaving ? "Saving..." : "Save"}
             </Button>
+            {currentNoteId && !isCreating && (
+              <Button
+                onClick={handleDeleteNote}
+                disabled={isDeleting}
+                size="sm"
+                variant="outline"
+                className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
           </div>
         </div>
         
