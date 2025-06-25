@@ -647,6 +647,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Categories
+  app.get("/api/categories", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { type } = req.query;
+      const categories = await storage.getUserCategories(userId, type as string);
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.post("/api/categories", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const category = await storage.createCategory(userId, req.body);
+      res.json(category);
+    } catch (error) {
+      console.error('Error creating category:', error);
+      res.status(400).json({ message: "Failed to create category" });
+    }
+  });
+
+  app.delete("/api/categories/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { id } = req.params;
+      const success = await storage.deleteCategory(userId, parseInt(id));
+      if (!success) {
+        return res.status(404).json({ message: "Category not found or cannot be deleted" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

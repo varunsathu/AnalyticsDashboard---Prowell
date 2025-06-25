@@ -150,6 +150,16 @@ export const journalEntries = pgTable("journal_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const categories = pgTable("categories", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name", { length: 100 }).notNull(),
+  color: varchar("color", { length: 50 }).default("blue"),
+  type: varchar("type", { length: 50 }).notNull(), // 'task', 'note', 'activity'
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert Schemas
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -237,6 +247,12 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
 
 export const updateJournalEntrySchema = insertJournalEntrySchema.partial();
 
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
 // Types
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
@@ -266,3 +282,6 @@ export type InsertWeeklyReport = z.infer<typeof insertWeeklyReportSchema>;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
 export type UpdateJournalEntry = z.infer<typeof updateJournalEntrySchema>;
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;

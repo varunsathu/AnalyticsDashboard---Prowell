@@ -9,6 +9,7 @@ import {
   healthMetrics,
   weeklyReports,
   journalEntries,
+  categories,
   type User,
   type UpsertUser,
   type Task,
@@ -31,6 +32,8 @@ import {
   type JournalEntry,
   type InsertJournalEntry,
   type UpdateJournalEntry,
+  type Category,
+  type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, sql } from "drizzle-orm";
@@ -94,6 +97,11 @@ export interface IStorage {
   createJournalEntry(userId: string, entry: InsertJournalEntry): Promise<JournalEntry>;
   updateJournalEntry(userId: string, id: number, entry: UpdateJournalEntry): Promise<JournalEntry | undefined>;
   deleteJournalEntry(userId: string, id: number): Promise<boolean>;
+
+  // Categories
+  getUserCategories(userId: string, type?: string): Promise<Category[]>;
+  createCategory(userId: string, category: InsertCategory): Promise<Category>;
+  deleteCategory(userId: string, categoryId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -122,6 +130,7 @@ export class DatabaseStorage implements IStorage {
         // Add demo browser activities and health data
         await this.initializeDemoBrowserData(demoUser.id);
         await this.initializeDemoHealthData(demoUser.id);
+        await this.initializeDefaultCategories(demoUser.id);
       }
     } catch (error) {
       console.log('Demo data initialization skipped (tables may not exist yet)');
@@ -896,6 +905,44 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(journalEntries.id, entryId),
         eq(journalEntries.userId, userId)
+      ));
+    
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Categories
+  async getUserCategories(userId: string, type?: string): Promise<Category[]> {
+    const query = db
+      .select()
+      .from(categories)
+      .where(eq(categories.userId, userId));
+    
+    if (type) {
+      query.where(eq(categories.type, type));
+    }
+    
+    return await query.orderBy(categories.name);
+  }
+
+  async createCategory(userId: string, insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values({
+        ...insertCategory,
+        userId,
+      })
+      .returning();
+    
+    return category;
+  }
+
+  async deleteCategory(userId: string, categoryId: number): Promise<boolean> {
+    const result = await db
+      .delete(categories)
+      .where(and(
+        eq(categories.id, categoryId),
+        eq(categories.userId, userId),
+        eq(categories.isDefault, false) // Prevent deletion of default categories
       ));
     
     return (result.rowCount ?? 0) > 0;
