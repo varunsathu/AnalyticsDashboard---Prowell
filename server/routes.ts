@@ -109,20 +109,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "taskIds must be an array" });
       }
 
+      if (taskIds.length === 0) {
+        return res.status(400).json({ message: "No task IDs provided" });
+      }
+
       let deletedCount = 0;
+      const errors = [];
+      
       for (const id of taskIds) {
         try {
+          console.log(`Attempting to delete task ${id} for user ${userId}`);
           const success = await storage.deleteTask(userId, parseInt(id));
-          if (success) deletedCount++;
+          console.log(`Delete result for task ${id}:`, success);
+          if (success) {
+            deletedCount++;
+          } else {
+            errors.push(`Task ${id} not found or unauthorized`);
+          }
         } catch (error) {
           console.error(`Failed to delete task ${id}:`, error);
+          errors.push(`Task ${id}: ${error.message}`);
         }
       }
       
-      res.json({ success: true, deletedCount });
+      console.log(`Successfully deleted ${deletedCount} tasks, errors:`, errors);
+      res.json({ success: true, deletedCount, errors: errors.length > 0 ? errors : undefined });
     } catch (error) {
       console.error('Error bulk deleting tasks:', error);
-      res.status(500).json({ message: "Failed to delete tasks" });
+      res.status(500).json({ message: "Failed to delete tasks", error: error.message });
     }
   });
 

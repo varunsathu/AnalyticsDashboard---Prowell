@@ -153,22 +153,26 @@ export default function TaskManager() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (taskIds: number[]) => {
-      return apiRequest("DELETE", "/api/tasks/bulk", { taskIds });
+      console.log('Frontend: Deleting tasks:', taskIds);
+      const response = await apiRequest("DELETE", "/api/tasks/bulk", { taskIds });
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Frontend: Delete success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       setSelectedTasks(new Set());
       setShowBulkActions(false);
       toast({
         title: "Tasks deleted",
-        description: "Selected tasks have been removed",
+        description: `Successfully removed ${data.deletedCount || 0} task(s)`,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Frontend: Delete error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete tasks",
+        description: "Failed to delete tasks. Please try again.",
         variant: "destructive",
       });
     },

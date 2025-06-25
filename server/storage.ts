@@ -315,10 +315,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTask(userId: string, taskId: number): Promise<boolean> {
-    const result = await db
-      .delete(tasks)
-      .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
-    return (result.rowCount || 0) > 0;
+    console.log(`Deleting task ${taskId} for user ${userId}`);
+    try {
+      const result = await db
+        .delete(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
+      
+      const success = (result.rowCount || 0) > 0;
+      console.log(`Delete task ${taskId} result: ${success}, rowCount: ${result.rowCount}`);
+      return success;
+    } catch (error) {
+      console.error(`Error deleting task ${taskId}:`, error);
+      throw error;
+    }
   }
 
   // Notes
