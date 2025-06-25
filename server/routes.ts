@@ -690,11 +690,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const category = await storage.createCategory(userId, req.body);
+      console.log('Creating category for user:', userId, 'with data:', req.body);
+      const categoryData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(userId, categoryData);
+      console.log('Category created successfully:', category);
       res.json(category);
     } catch (error) {
       console.error('Error creating category:', error);
-      res.status(400).json({ message: "Failed to create category" });
+      res.status(400).json({ message: "Invalid category data", error: error.message });
+    }
+  });
+
+  app.delete("/api/categories/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const categoryId = parseInt(req.params.id);
+      console.log('Deleting category:', categoryId, 'for user:', userId);
+      const success = await storage.deleteCategory(userId, categoryId);
+      if (!success) {
+        return res.status(404).json({ message: "Category not found or cannot be deleted" });
+      }
+      res.json({ success });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  app.post("/api/tasks/cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      console.log('Running task cleanup for user:', userId);
+      const deletedCount = await storage.cleanupCompletedTasks(userId);
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      console.error('Error cleaning up tasks:', error);
+      res.status(500).json({ message: "Failed to cleanup tasks" });
     }
   });
 

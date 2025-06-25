@@ -278,7 +278,14 @@ export class DatabaseStorage implements IStorage {
 
   // Tasks
   async getUserTasks(userId: string): Promise<Task[]> {
-    return await db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.userId, userId))
+      .orderBy(
+        sql`CASE WHEN status = 'pending' THEN 0 ELSE 1 END`,
+        desc(tasks.createdAt)
+      );
   }
 
   async getTask(id: number): Promise<Task | undefined> {
@@ -966,15 +973,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCategory(userId: string, categoryId: number): Promise<boolean> {
+    // Check if it's a default category - don't allow deletion
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)));
+    
+    if (!category) {
+      return false;
+    }
+    
+    if (category.isDefault) {
+      console.log('Cannot delete default category:', category.name);
+      return false;
+    }
+    
+    // Delete the category but keep notes and tasks (they'll just have the category name as string)
     const result = await db
       .delete(categories)
-      .where(and(
-        eq(categories.id, categoryId),
-        eq(categories.userId, userId),
-        eq(categories.isDefault, false) // Prevent deletion of default categories
-      ));
+      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)));
     
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async cleanupCompletedTasks(userId: string): Promise<number> {
+    // Delete completed tasks older than 7 days
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const result = await db
+      .delete(tasks)
+      .where(and(
+        eq(tasks.userId, userId),
+        eq(tasks.status, 'completed'),
+        sql`completed_at < ${weekAgo}`
+      ));
+    
+    return result.rowCount ?? 0;
   }
 }
 
