@@ -102,6 +102,7 @@ export interface IStorage {
   getUserCategories(userId: string, type?: string): Promise<Category[]>;
   createCategory(userId: string, category: InsertCategory): Promise<Category>;
   deleteCategory(userId: string, categoryId: number): Promise<boolean>;
+  cleanupCompletedTasks(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {

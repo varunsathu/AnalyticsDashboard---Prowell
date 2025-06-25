@@ -99,6 +99,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/tasks/bulk", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { taskIds } = req.body;
+      console.log('Bulk deleting tasks:', taskIds, 'for user:', userId);
+      
+      if (!Array.isArray(taskIds)) {
+        return res.status(400).json({ message: "taskIds must be an array" });
+      }
+
+      const results = await Promise.all(
+        taskIds.map(id => storage.deleteTask(userId, parseInt(id)))
+      );
+      
+      const deletedCount = results.filter(Boolean).length;
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      console.error('Error bulk deleting tasks:', error);
+      res.status(500).json({ message: "Failed to delete tasks" });
+    }
+  });
+
   // Notes
   app.get("/api/notes", isAuthenticated, async (req: any, res) => {
     try {

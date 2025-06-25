@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, Clock } from "lucide-react";
+import { Plus, Calendar, Clock, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,8 @@ export default function TaskManager() {
   const [filter, setFilter] = useState<"all" | "today" | "overdue">("all");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [newTaskData, setNewTaskData] = useState({
     title: "",
     description: "",
@@ -129,6 +131,49 @@ export default function TaskManager() {
     },
   });
 
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: number) => {
+      return apiRequest("DELETE", `/api/categories/${categoryId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      toast({
+        title: "Category deleted",
+        description: "Category removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Cannot delete default categories or category not found",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (taskIds: number[]) => {
+      return apiRequest("DELETE", "/api/tasks/bulk", { taskIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      setSelectedTasks(new Set());
+      setShowBulkActions(false);
+      toast({
+        title: "Tasks deleted",
+        description: "Selected tasks have been removed",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete tasks",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddTask = () => {
     if (!newTaskData.title.trim()) return;
     addTaskMutation.mutate(newTaskData);
@@ -151,6 +196,45 @@ export default function TaskManager() {
       name: newCategoryName.trim(),
       color: randomColor,
     });
+  };
+
+  const handleDeleteCategory = (categoryId: number, isDefault: boolean) => {
+    if (isDefault) {
+      toast({
+        title: "Cannot delete default category",
+        description: "Default categories cannot be removed",
+        variant: "destructive",
+      });
+      return;
+    }
+    deleteCategoryMutation.mutate(categoryId);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedTasks.size === 0) return;
+    bulkDeleteMutation.mutate(Array.from(selectedTasks));
+  };
+
+  const toggleTaskSelection = (taskId: number) => {
+    const newSelected = new Set(selectedTasks);
+    if (newSelected.has(taskId)) {
+      newSelected.delete(taskId);
+    } else {
+      newSelected.add(taskId);
+    }
+    setSelectedTasks(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const selectAllTasks = () => {
+    const allTaskIds = new Set(filteredTasks.map(task => task.id));
+    setSelectedTasks(allTaskIds);
+    setShowBulkActions(allTaskIds.size > 0);
+  };
+
+  const clearSelection = () => {
+    setSelectedTasks(new Set());
+    setShowBulkActions(false);
   };
 
   const getCategoryBadge = (categoryName: string) => {
@@ -234,17 +318,53 @@ export default function TaskManager() {
             return (
               <div
                 key={category.id}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${colors.bg} ${colors.border}`}
+                className={`group flex items-center space-x-2 px-3 py-2 rounded-lg border ${colors.bg} ${colors.border} relative`}
               >
                 <div className={`w-3 h-3 rounded-full ${colors.dot}`} />
                 <span className={`text-sm font-medium ${colors.text} capitalize`}>{category.name}</span>
                 <Badge variant="secondary" className={`text-xs ${colors.bg} ${colors.text}`}>
                   {count}
                 </Badge>
+                {!category.isDefault && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 absolute -top-2 -right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full"
+                    onClick={() => handleDeleteCategory(category.id, category.isDefault)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* Bulk Actions */}
+        {showBulkActions && (
+          <div className="flex items-center justify-between bg-charcoal-50 border border-charcoal-200 rounded-lg p-3 mt-4">
+            <span className="text-sm text-charcoal-700">
+              {selectedTasks.size} task{selectedTasks.size !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button variant="outline" size="sm" onClick={selectAllTasks}>
+                Select All
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleBulkDelete}
+                disabled={bulkDeleteMutation.isPending}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                {bulkDeleteMutation.isPending ? "Deleting..." : "Delete Selected"}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="p-6">
@@ -267,11 +387,18 @@ export default function TaskManager() {
                   }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={task.status === "completed"}
-                      onCheckedChange={() => toggleTaskMutation.mutate(task)}
-                      className="mt-1"
-                    />
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={() => toggleTaskSelection(task.id)}
+                        className="mt-1"
+                      />
+                      <Checkbox
+                        checked={task.status === "completed"}
+                        onCheckedChange={() => toggleTaskMutation.mutate(task)}
+                        className="mt-1"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4
@@ -286,6 +413,14 @@ export default function TaskManager() {
                           <Badge className={`${priorityColor.bg} ${priorityColor.text} text-xs`}>
                             {task.priority}
                           </Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
+                            onClick={() => toggleTaskSelection(task.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                       {task.description && (
