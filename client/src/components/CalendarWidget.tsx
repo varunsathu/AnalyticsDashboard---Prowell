@@ -45,7 +45,11 @@ export default function CalendarWidget() {
       const response = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify({
+          ...eventData,
+          startTime: eventData.startTime.toISOString(),
+          endTime: eventData.endTime.toISOString(),
+        }),
       });
       if (!response.ok) throw new Error("Failed to create event");
       return response.json();

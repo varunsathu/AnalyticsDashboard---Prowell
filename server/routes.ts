@@ -300,9 +300,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       console.log('Creating event for user:', userId, 'with data:', req.body);
-      const eventData = insertEventSchema.parse(req.body);
-      console.log('Validated event data:', eventData);
-      const event = await storage.createEvent(userId, eventData);
+      
+      // Convert date strings to Date objects
+      const eventData = {
+        ...req.body,
+        startTime: new Date(req.body.startTime),
+        endTime: new Date(req.body.endTime),
+      };
+      
+      const validatedData = insertEventSchema.parse(eventData);
+      console.log('Validated event data:', validatedData);
+      const event = await storage.createEvent(userId, validatedData);
       console.log('Event created successfully:', event);
       res.json(event);
     } catch (error) {
