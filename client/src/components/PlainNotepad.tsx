@@ -79,13 +79,13 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
   // Auto-save functionality
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (content.trim() && currentNoteId && !isCreating) {
+      if (content.trim() && currentNoteId && !isCreating && !updateNoteMutation.isPending) {
         updateNoteMutation.mutate({
           id: currentNoteId,
           noteData: { content, title: title || "Quick Note" }
         });
       }
-    }, 2000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [content, title, currentNoteId, isCreating]);
