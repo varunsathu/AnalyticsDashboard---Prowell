@@ -364,11 +364,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/focus-sessions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const sessionData = insertFocusSessionSchema.parse(req.body);
-      const session = await storage.createFocusSession(userId, sessionData);
+      console.log('Creating focus session for user:', userId, 'with data:', req.body);
+      
+      // Convert date strings to Date objects
+      const sessionData = {
+        ...req.body,
+        startTime: new Date(req.body.startTime),
+        endTime: req.body.endTime ? new Date(req.body.endTime) : undefined,
+      };
+      
+      const validatedData = insertFocusSessionSchema.parse(sessionData);
+      console.log('Validated session data:', validatedData);
+      const session = await storage.createFocusSession(userId, validatedData);
+      console.log('Focus session created successfully:', session);
       res.json(session);
     } catch (error) {
-      res.status(400).json({ message: "Invalid session data" });
+      console.error('Error creating focus session:', error);
+      res.status(400).json({ message: "Invalid session data", error: error.message });
     }
   });
 
@@ -376,14 +388,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const sessionId = parseInt(req.params.id);
-      const sessionData = insertFocusSessionSchema.parse(req.body);
-      const session = await storage.updateFocusSession(userId, sessionId, sessionData);
+      
+      // Convert date strings to Date objects
+      const sessionData = {
+        ...req.body,
+        startTime: req.body.startTime ? new Date(req.body.startTime) : undefined,
+        endTime: req.body.endTime ? new Date(req.body.endTime) : undefined,
+      };
+      
+      const validatedData = insertFocusSessionSchema.parse(sessionData);
+      const session = await storage.updateFocusSession(userId, sessionId, validatedData);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
       res.json(session);
     } catch (error) {
-      res.status(400).json({ message: "Invalid session data" });
+      console.error('Error updating focus session:', error);
+      res.status(400).json({ message: "Invalid session data", error: error.message });
+    }
+  });
+
+  app.patch("/api/focus-sessions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const sessionId = parseInt(req.params.id);
+      console.log('Updating focus session:', sessionId, 'for user:', userId, 'with data:', req.body);
+      
+      // Convert date strings to Date objects for partial updates
+      const sessionData: any = { ...req.body };
+      if (sessionData.startTime) {
+        sessionData.startTime = new Date(sessionData.startTime);
+      }
+      if (sessionData.endTime) {
+        sessionData.endTime = new Date(sessionData.endTime);
+      }
+      
+      const session = await storage.updateFocusSession(userId, sessionId, sessionData);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      console.log('Focus session updated successfully:', session);
+      res.json(session);
+    } catch (error) {
+      console.error('Error updating focus session:', error);
+      res.status(400).json({ message: "Invalid session data", error: error.message });
     }
   });
 
