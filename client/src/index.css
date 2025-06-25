@@ -193,10 +193,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.05), rgba(0, 0, 0, 0.15));
   pointer-events: none;
   z-index: 40;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 
 .focus-mode-content {
@@ -204,16 +204,61 @@
   z-index: 41;
 }
 
-/* Focus mode styles */
-.focus-mode-active .focus-hide {
-  opacity: 0.3;
-  transition: opacity 0.3s ease;
+/* Enhanced Focus mode styles */
+.focus-mode-active {
+  background: linear-gradient(135deg, #f8fffe, #f0fdfa);
 }
 
-.focus-mode-active .focus-highlight {
-  box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
-  border: 2px solid rgba(20, 184, 166, 0.6);
-  transition: all 0.3s ease;
+.focus-mode-active .focus-hide {
+  display: none !important;
+}
+
+.focus-highlight {
+  position: relative;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(20, 184, 166, 0.3);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(20, 184, 166, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-highlight::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, rgba(20, 184, 166, 0.3), rgba(14, 165, 233, 0.2));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.focus-highlight:hover::before {
+  opacity: 1;
+}
+
+/* Focus mode specific component styling */
+.focus-mode-active .focus-highlight .card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Zen mode breathing animation */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+
+.focus-highlight {
+  animation: breathe 4s ease-in-out infinite;
 }
 
 /* Smart focus notifications */

@@ -135,15 +135,19 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Quick Capture */}
-            <Button onClick={onQuickCapture} className="bg-teal-600 hover:bg-teal-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Quick Capture
-            </Button>
+            {/* Quick Capture - Only show in focus mode if essential */}
+            {!focusMode && (
+              <Button onClick={onQuickCapture} className="bg-teal-600 hover:bg-teal-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Quick Capture
+              </Button>
+            )}
 
             {/* Focus Mode Toggle */}
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-charcoal-600">Smart Focus</span>
+              <span className="text-sm text-charcoal-600">
+                {focusMode ? "Deep Focus" : "Smart Focus"}
+              </span>
               <Switch checked={focusMode} onCheckedChange={onToggleFocusMode} />
               {focusMode && (
                 <div className="flex items-center space-x-1">
@@ -152,6 +156,19 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                 </div>
               )}
             </div>
+
+            {/* Quick Thoughts in Focus Mode */}
+            {focusMode && (
+              <Button 
+                onClick={onQuickCapture} 
+                variant="outline"
+                size="sm"
+                className="border-teal-300 text-teal-700 hover:bg-teal-50"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Capture Thought
+              </Button>
+            )}
 
             {/* Profile */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold">

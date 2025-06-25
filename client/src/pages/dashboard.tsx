@@ -43,28 +43,48 @@ export default function Dashboard() {
         />
 
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <StatsOverview />
+          {!focusMode && <StatsOverview />}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-8">
-              <TaskManager />
-              <ActivityTracker />
-              <WeeklyReport />
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-8">
-              <SmartNotes />
-              <CalendarWidget />
-              <div className={focusMode ? "focus-highlight" : ""}>
-                <FocusTimer />
+          {focusMode ? (
+            /* Focus Mode Layout - Minimal and Centered */
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* Essential Focus Elements Only */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Current Task Focus */}
+                <div className="focus-highlight">
+                  <FocusTimer />
+                </div>
+                
+                {/* Quick Thoughts & Notes */}
+                <div className="focus-highlight">
+                  <SmartNotes />
+                </div>
               </div>
-              <div className={focusMode ? "focus-hide" : ""}>
+              
+              {/* Minimal Task View - Only Active Tasks */}
+              <div className="focus-highlight">
+                <TaskManager />
+              </div>
+            </div>
+          ) : (
+            /* Normal Mode Layout */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column */}
+              <div className="lg:col-span-2 space-y-8">
+                <TaskManager />
+                <ActivityTracker />
+                <WeeklyReport />
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-8">
+                <SmartNotes />
+                <CalendarWidget />
+                <FocusTimer />
                 <HealthMetrics />
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <QuickCaptureModal
