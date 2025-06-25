@@ -58,6 +58,67 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
     return "U";
   };
 
+  const getDailyReflection = () => {
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const hour = now.getHours();
+    
+    // Define time periods
+    let timePeriod: 'morning' | 'afternoon' | 'evening' | 'night';
+    if (hour >= 5 && hour < 12) timePeriod = 'morning';
+    else if (hour >= 12 && hour < 17) timePeriod = 'afternoon';
+    else if (hour >= 17 && hour < 22) timePeriod = 'evening';
+    else timePeriod = 'night';
+
+    const reflections = {
+      Monday: {
+        morning: "Who do you want to become by nightfall — and what brings you closer?",
+        afternoon: "You've come this far — what's worth finishing strong?",
+        evening: "What's something you're quietly proud of tonight?",
+        night: "Your mind did enough today — let it rest like it deserves to."
+      },
+      Tuesday: {
+        morning: "Today is a blank canvas — what's the first stroke you'll make?",
+        afternoon: "The day's in motion — are you aligned with your momentum?",
+        evening: "How did the creator in you express today?",
+        night: "Rest easy — even your dreams deserve direction and purpose."
+      },
+      Wednesday: {
+        morning: "What's one intention that could quietly shape the rest of your day?",
+        afternoon: "Halfway through — what's the one thing still worth doing well today?",
+        evening: "Even if the day felt ordinary, what made it yours?",
+        night: "Not everything needs closure tonight — just your peace."
+      },
+      Thursday: {
+        morning: "If you honored just one promise to yourself today, what would it be?",
+        afternoon: "Pause. Recalibrate. What matters most in the remaining hours?",
+        evening: "What tiny thing moved you forward — even if no one noticed?",
+        night: "The world quiets down — what thought do you want to take into sleep?"
+      },
+      Friday: {
+        morning: "What would a courageous version of you start doing right now?",
+        afternoon: "What are you resisting that might actually free you up?",
+        evening: "Did anything today surprise you — about yourself or the world?",
+        night: "Inhale stillness. Exhale whatever wasn't yours to carry."
+      },
+      Saturday: {
+        morning: "The morning is yours — what would feel like a small personal win by noon?",
+        afternoon: "What deserves a second wind right now?",
+        evening: "What part of today do you want to carry into tomorrow?",
+        night: "Let go of the weight. Tomorrow's a fresh start with your name on it."
+      },
+      Sunday: {
+        morning: "What kind of energy do you want to lead with today?",
+        afternoon: "What's holding you back right now — and what would ease the block?",
+        evening: "Did you stay true to something that matters to you today?",
+        night: "What would you love to wake up excited about tomorrow?"
+      }
+    };
+
+    return reflections[dayName as keyof typeof reflections]?.[timePeriod] || 
+           "Ready to tackle your goals today?";
+  };
+
   return (
     <header className="bg-white border-b border-charcoal-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4">
@@ -68,7 +129,7 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                 {getGreeting()}, {getUserDisplayName()} 👋
               </h1>
               <p className="text-charcoal-600 text-sm mt-1">
-                Ready to tackle your goals today?
+                {getDailyReflection()}
               </p>
             </div>
           </div>
