@@ -371,7 +371,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchNotes(userId: string, query: string): Promise<Note[]> {
-    return await db
+    console.log('Storage searchNotes - userId:', userId, 'query:', query);
+    
+    const result = await db
       .select()
       .from(notes)
       .where(
@@ -384,6 +386,9 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(notes.createdAt));
+    
+    console.log('Storage searchNotes - found:', result.length, 'notes');
+    return result;
   }
 
   // Activities

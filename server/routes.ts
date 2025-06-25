@@ -232,10 +232,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const query = req.query.q as string;
+      console.log('Search request - userId:', userId, 'query:', query);
+      
       if (!query || query.trim() === '') {
+        console.log('Empty search query, returning empty array');
         return res.json([]); // Return empty array for empty queries
       }
+      
       const notes = await storage.searchNotes(userId, query);
+      console.log('Search results:', notes.length, 'notes found');
       res.json(notes);
     } catch (error) {
       console.error('Error searching notes:', error);

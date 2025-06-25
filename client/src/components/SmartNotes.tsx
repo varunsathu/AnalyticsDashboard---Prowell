@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import type { Note, InsertNote } from "@shared/schema";
 
 export default function SmartNotes() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
@@ -23,8 +24,34 @@ export default function SmartNotes() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Construct query URL with proper parameters
+  const queryKey = useMemo(() => {
+    if (debouncedSearchQuery.trim()) {
+      return ["/api/notes/search", debouncedSearchQuery];
+    }
+    return ["/api/notes"];
+  }, [debouncedSearchQuery]);
+
   const { data: notes = [], isLoading } = useQuery<Note[]>({
-    queryKey: searchQuery ? ["/api/notes/search", { q: searchQuery }] : ["/api/notes"],
+    queryKey,
+    queryFn: async () => {
+      let url = "/api/notes";
+      if (debouncedSearchQuery.trim()) {
+        url = `/api/notes/search?q=${encodeURIComponent(debouncedSearchQuery)}`;
+      }
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch notes");
+      return response.json();
+    },
   });
 
   const createNoteMutation = useMutation({
@@ -39,6 +66,7 @@ export default function SmartNotes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/search"] });
       setIsCreateDialogOpen(false);
       setNewNoteTitle("");
       setNewNoteContent("");
@@ -69,6 +97,7 @@ export default function SmartNotes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/search"] });
       setEditingNote(null);
       toast({
         title: "Success",
@@ -94,6 +123,7 @@ export default function SmartNotes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/search"] });
       toast({
         title: "Success",
         description: "Note deleted successfully",
