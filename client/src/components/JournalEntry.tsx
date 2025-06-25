@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, BookOpen, Save, Plus, ChevronLeft, ChevronRight, RotateCcw, FastForward, Rewind } from "lucide-react";
+import { Calendar, BookOpen, Save, Plus, ChevronLeft, ChevronRight, RotateCcw, FastForward, Rewind, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -100,6 +100,35 @@ export default function JournalEntry() {
     },
   });
 
+  // Delete journal entry mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (entryId: number) => {
+      const response = await fetch(`/api/journal/${entryId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete journal entry: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+      toast({
+        title: "Deleted",
+        description: "Journal entry has been deleted",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete journal entry",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update form data when entry changes
   useEffect(() => {
     if (entry) {
@@ -173,6 +202,12 @@ export default function JournalEntry() {
       ...formData,
       date: selectedDate,
     } as InsertJournalEntry);
+  };
+
+  const handleDelete = () => {
+    if (entry && window.confirm("Are you sure you want to delete this journal entry? This action cannot be undone.")) {
+      deleteMutation.mutate(entry.id);
+    }
   };
 
   const addTag = () => {
@@ -318,13 +353,25 @@ export default function JournalEntry() {
             </div>
             <div className="flex gap-2">
               {!isEditing && entry && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deleteMutation.isPending}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                  </Button>
+                </>
               )}
               {(isEditing || !entry) && (
                 <Button
