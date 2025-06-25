@@ -652,7 +652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const { type } = req.query;
+      console.log('Fetching categories for user:', userId, 'type:', type);
       const categories = await storage.getUserCategories(userId, type as string);
+      console.log('Found categories:', categories);
       res.json(categories);
     } catch (error) {
       console.error('Error fetching categories:', error);

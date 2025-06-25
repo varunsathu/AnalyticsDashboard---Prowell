@@ -235,6 +235,31 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  private async initializeDefaultCategories(userId: string) {
+    // Check if user already has default categories
+    const existingCategories = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.userId, userId), eq(categories.isDefault, true)));
+    
+    if (existingCategories.length === 0) {
+      const defaultCategories = [
+        { name: "Work", color: "blue", type: "task", isDefault: true },
+        { name: "Personal", color: "emerald", type: "task", isDefault: true },
+        { name: "Learning", color: "amber", type: "task", isDefault: true },
+        { name: "Health", color: "red", type: "task", isDefault: true },
+        { name: "Finance", color: "green", type: "task", isDefault: true },
+      ];
+
+      await db.insert(categories).values(
+        defaultCategories.map(cat => ({
+          ...cat,
+          userId,
+        }))
+      );
+    }
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -912,16 +937,19 @@ export class DatabaseStorage implements IStorage {
 
   // Categories
   async getUserCategories(userId: string, type?: string): Promise<Category[]> {
-    const query = db
-      .select()
-      .from(categories)
-      .where(eq(categories.userId, userId));
-    
     if (type) {
-      query.where(eq(categories.type, type));
+      return await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.userId, userId), eq(categories.type, type)))
+        .orderBy(categories.name);
     }
     
-    return await query.orderBy(categories.name);
+    return await db
+      .select()
+      .from(categories)
+      .where(eq(categories.userId, userId))
+      .orderBy(categories.name);
   }
 
   async createCategory(userId: string, insertCategory: InsertCategory): Promise<Category> {
