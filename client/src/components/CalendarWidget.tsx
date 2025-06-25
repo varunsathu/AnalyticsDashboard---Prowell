@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Video, Users, Dumbbell, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Plus, Video, Users, Dumbbell, ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, startOfDay, endOfDay, isEqual } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, InsertEvent } from "@shared/schema";
@@ -118,11 +118,41 @@ export default function CalendarWidget() {
     setCurrentDate(direction === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
   };
 
-  // Filter events for today
-  const todayEvents = events.filter(event => {
+  // Filter events for selected date
+  const selectedDateEvents = events.filter(event => {
     const eventDate = new Date(event.startTime);
-    return isEqual(startOfDay(eventDate), startOfDay(new Date()));
+    return isEqual(startOfDay(eventDate), startOfDay(selectedDate));
   });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete event");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteEvent = (eventId: number) => {
+    if (confirm("Are you sure you want to delete this event?")) {
+      deleteEventMutation.mutate(eventId);
+    }
+  };
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -260,37 +290,58 @@ export default function CalendarWidget() {
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-sm">
-            {days.map((day, index) => (
-              <div
-                key={`${day.toISOString()}-${index}`}
-                onClick={() => {
-                  setSelectedDate(day);
-                  setNewEventDate(format(day, 'yyyy-MM-dd'));
-                }}
-                className={`p-2 rounded cursor-pointer transition-colors ${
-                  isToday(day)
-                    ? "bg-teal-600 text-white font-semibold"
-                    : isEqual(startOfDay(day), startOfDay(selectedDate))
-                    ? "bg-teal-100 text-teal-700 font-medium"
-                    : !isSameMonth(day, currentDate)
-                    ? "text-charcoal-400"
-                    : "hover:bg-charcoal-100"
-                }`}
-              >
-                {format(day, 'd')}
-              </div>
-            ))}
+            {days.map((day, index) => {
+              const hasEvents = events.some(event => 
+                isEqual(startOfDay(new Date(event.startTime)), startOfDay(day))
+              );
+              
+              return (
+                <div
+                  key={`${day.toISOString()}-${index}`}
+                  onClick={() => {
+                    setSelectedDate(day);
+                    setNewEventDate(format(day, 'yyyy-MM-dd'));
+                  }}
+                  className={`relative p-2 rounded cursor-pointer transition-colors ${
+                    isToday(day)
+                      ? "bg-teal-600 text-white font-semibold"
+                      : isEqual(startOfDay(day), startOfDay(selectedDate))
+                      ? "bg-teal-100 text-teal-700 font-medium"
+                      : !isSameMonth(day, currentDate)
+                      ? "text-charcoal-400"
+                      : "hover:bg-charcoal-100"
+                  }`}
+                >
+                  {format(day, 'd')}
+                  {hasEvents && (
+                    <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                      isToday(day) ? "bg-white" : "bg-teal-500"
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Today's Events */}
+        {/* Selected Date Events */}
         <div>
-          <h3 className="font-semibold text-charcoal-900 mb-4">Today's Schedule</h3>
+          <h3 className="font-semibold text-charcoal-900 mb-4">
+            {isToday(selectedDate) 
+              ? "Today's Schedule"
+              : `Events for ${format(selectedDate, 'MMM d, yyyy')}`
+            }
+          </h3>
           <div className="space-y-3">
-            {todayEvents.length === 0 ? (
+            {selectedDateEvents.length === 0 ? (
               <div className="text-center py-4">
                 <Calendar className="w-8 h-8 text-charcoal-400 mx-auto mb-2" />
-                <p className="text-charcoal-500 text-sm">No events scheduled for today</p>
+                <p className="text-charcoal-500 text-sm">
+                  {isToday(selectedDate) 
+                    ? "No events scheduled for today"
+                    : "No events scheduled for this date"
+                  }
+                </p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -298,7 +349,7 @@ export default function CalendarWidget() {
                   onClick={() => {
                     setNewEventTitle("");
                     setNewEventType("");
-                    setNewEventDate(format(new Date(), 'yyyy-MM-dd'));
+                    setNewEventDate(format(selectedDate, 'yyyy-MM-dd'));
                     setNewEventStartTime("");
                     setNewEventEndTime("");
                     setIsCreateDialogOpen(true);
@@ -309,14 +360,14 @@ export default function CalendarWidget() {
                 </Button>
               </div>
             ) : (
-              todayEvents.map((event) => {
+              selectedDateEvents.map((event) => {
                 const IconComponent = eventIcons[event.type as keyof typeof eventIcons] || Calendar;
                 const colors = eventColors[event.type as keyof typeof eventColors] || eventColors.work;
                 
                 return (
                   <div
                     key={event.id}
-                    className={`flex items-center space-x-3 p-3 ${colors.bg} rounded-lg border-l-4 ${colors.border}`}
+                    className={`flex items-center space-x-3 p-3 ${colors.bg} rounded-lg border-l-4 ${colors.border} group`}
                   >
                     <IconComponent className={`w-4 h-4 ${colors.text}`} />
                     <div className="flex-1">
@@ -325,6 +376,15 @@ export default function CalendarWidget() {
                         {format(new Date(event.startTime), 'h:mm a')} - {format(new Date(event.endTime), 'h:mm a')}
                       </p>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-charcoal-400 hover:text-red-600"
+                      disabled={deleteEventMutation.isPending}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </div>
                 );
               })
