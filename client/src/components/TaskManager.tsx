@@ -151,34 +151,59 @@ export default function TaskManager() {
     },
   });
 
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      console.log('Frontend: Deleting single task:', taskId, typeof taskId);
+      const response = await apiRequest("DELETE", `/api/tasks/${taskId}`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Task deleted",
+        description: "Task has been removed successfully",
+      });
+    },
+    onError: (error) => {
+      console.error('Frontend: Delete error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const bulkDeleteMutation = useMutation({
     mutationFn: async (taskIds: number[]) => {
-      console.log('Frontend: Deleting tasks:', taskIds);
-      // Ensure taskIds are numbers
-      const validTaskIds = taskIds.filter(id => typeof id === 'number' && !isNaN(id));
-      console.log('Frontend: Valid task IDs:', validTaskIds);
+      console.log('Frontend: Bulk deleting tasks:', taskIds);
       
-      if (validTaskIds.length === 0) {
-        throw new Error('No valid task IDs provided');
-      }
+      // Delete tasks one by one using individual API calls
+      const results = await Promise.allSettled(
+        taskIds.map(taskId => 
+          apiRequest("DELETE", `/api/tasks/${taskId}`)
+        )
+      );
       
-      const response = await apiRequest("DELETE", "/api/tasks/bulk", { taskIds: validTaskIds });
-      const data = await response.json();
-      return data;
+      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const failureCount = results.filter(result => result.status === 'rejected').length;
+      
+      return { successCount, failureCount, total: taskIds.length };
     },
     onSuccess: (data) => {
-      console.log('Frontend: Delete success:', data);
+      console.log('Frontend: Bulk delete success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       setSelectedTasks(new Set());
       setShowBulkActions(false);
       toast({
         title: "Tasks deleted",
-        description: `Successfully removed ${data.deletedCount || 0} task(s)`,
+        description: `Successfully removed ${data.successCount} of ${data.total} task(s)`,
       });
     },
     onError: (error) => {
-      console.error('Frontend: Delete error:', error);
+      console.error('Frontend: Bulk delete error:', error);
       toast({
         title: "Error",
         description: "Failed to delete tasks. Please try again.",
@@ -377,10 +402,10 @@ export default function TaskManager() {
                 variant="destructive" 
                 size="sm" 
                 onClick={handleBulkDelete}
-                disabled={bulkDeleteMutation.isPending}
+                disabled={bulkDeleteMutation.isPending || deleteTaskMutation.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
-                {bulkDeleteMutation.isPending ? "Deleting..." : "Delete Selected"}
+                {(bulkDeleteMutation.isPending || deleteTaskMutation.isPending) ? "Deleting..." : "Delete Selected"}
               </Button>
             </div>
           </div>
@@ -438,10 +463,8 @@ export default function TaskManager() {
                             variant="ghost" 
                             size="sm" 
                             className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
-                            onClick={() => {
-                              console.log('Frontend: Deleting single task:', task.id, typeof task.id);
-                              bulkDeleteMutation.mutate([Number(task.id)]);
-                            }}
+                            onClick={() => deleteTaskMutation.mutate(task.id)}
+                            disabled={deleteTaskMutation.isPending}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
