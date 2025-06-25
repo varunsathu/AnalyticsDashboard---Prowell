@@ -88,6 +88,9 @@ export default function Dashboard() {
           ) : activeView === 'analytics' ? (
             /* Analytics View */
             <div className="space-y-8">
+              {/* Key Performance Metrics */}
+              <StatsOverview />
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - Browser & Activity Analytics */}
                 <div className="space-y-8">
