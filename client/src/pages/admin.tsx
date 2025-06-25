@@ -53,6 +53,40 @@ interface AdminStats {
     errorRate: number;
     databaseSize: number;
   };
+  billing: {
+    monthlyRevenue: number;
+    totalCosts: number;
+    profitMargin: number;
+    costBreakdown: {
+      compute: number;
+      database: number;
+      storage: number;
+      bandwidth: number;
+    };
+    userCosts: Array<{
+      userId: string;
+      email: string;
+      monthlyUsage: {
+        apiCalls: number;
+        storageGB: number;
+        computeHours: number;
+        bandwidthGB: number;
+      };
+      costs: {
+        total: number;
+        compute: number;
+        storage: number;
+        bandwidth: number;
+      };
+      tier: "free" | "basic" | "premium" | "enterprise";
+    }>;
+    pricing: {
+      computePerHour: number;
+      storagePerGB: number;
+      bandwidthPerGB: number;
+      apiCallsPer1000: number;
+    };
+  };
 }
 
 export default function AdminDashboard() {
@@ -138,17 +172,88 @@ export default function AdminDashboard() {
       uptime: 99.8,
       errorRate: 0.2,
       databaseSize: 2.4
+    },
+    billing: {
+      monthlyRevenue: 15420.50,
+      totalCosts: 8940.25,
+      profitMargin: 42.0,
+      costBreakdown: {
+        compute: 4250.80,
+        database: 2140.30,
+        storage: 1890.15,
+        bandwidth: 659.00
+      },
+      userCosts: [
+        {
+          userId: "user-123",
+          email: "john@example.com",
+          monthlyUsage: {
+            apiCalls: 45200,
+            storageGB: 2.8,
+            computeHours: 18.5,
+            bandwidthGB: 12.3
+          },
+          costs: {
+            total: 89.45,
+            compute: 55.50,
+            storage: 14.00,
+            bandwidth: 19.95
+          },
+          tier: "premium"
+        },
+        {
+          userId: "user-456",
+          email: "sarah@example.com",
+          monthlyUsage: {
+            apiCalls: 32100,
+            storageGB: 1.9,
+            computeHours: 12.2,
+            bandwidthGB: 8.7
+          },
+          costs: {
+            total: 62.30,
+            compute: 36.60,
+            storage: 9.50,
+            bandwidth: 16.20
+          },
+          tier: "basic"
+        },
+        {
+          userId: "user-789",
+          email: "mike@example.com",
+          monthlyUsage: {
+            apiCalls: 78500,
+            storageGB: 5.4,
+            computeHours: 35.8,
+            bandwidthGB: 23.1
+          },
+          costs: {
+            total: 167.80,
+            compute: 107.40,
+            storage: 27.00,
+            bandwidth: 33.40
+          },
+          tier: "enterprise"
+        }
+      ],
+      pricing: {
+        computePerHour: 3.00,
+        storagePerGB: 5.00,
+        bandwidthPerGB: 1.45,
+        apiCallsPer1000: 0.50
+      }
     }
   };
 
   const stats = adminStats || mockStats;
 
-  const exportData = async (type: "users" | "usage" | "activity") => {
+  const exportData = async (type: "users" | "usage" | "activity" | "billing") => {
     // In production, this would trigger a CSV/Excel export
     const data = {
       users: stats.users,
       usage: stats.usage,
-      activity: stats.activity
+      activity: stats.activity,
+      billing: stats.billing
     }[type];
 
     const filename = `${type}-data-${format(new Date(), "yyyy-MM-dd")}.json`;
@@ -261,10 +366,11 @@ export default function AdminDashboard() {
 
         {/* Detailed Analytics */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="usage">Usage</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="health">Health</TabsTrigger>
           </TabsList>
 
@@ -441,6 +547,230 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-xs text-charcoal-600">{hour.hour}:00</div>
                       <div className="text-sm font-medium text-charcoal-900">{hour.users}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-charcoal-900">Billing & Costs</h2>
+              <Button variant="outline" size="sm" onClick={() => exportData("billing" as any)}>
+                <Download className="h-4 w-4 mr-2" />
+                Export Billing
+              </Button>
+            </div>
+
+            {/* Revenue & Cost Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="glass-card border-emerald-200/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-charcoal-600">Monthly Revenue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-emerald-700">
+                    ${stats.billing.monthlyRevenue.toLocaleString()}
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-700">
+                    +12.3% vs last month
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-orange-200/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-charcoal-600">Total Costs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-700">
+                    ${stats.billing.totalCosts.toLocaleString()}
+                  </div>
+                  <Badge className="bg-orange-100 text-orange-700">
+                    +5.8% vs last month
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-blue-200/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-charcoal-600">Profit Margin</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {stats.billing.profitMargin.toFixed(1)}%
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-700">
+                    Healthy
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-purple-200/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-charcoal-600">Net Profit</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-700">
+                    ${(stats.billing.monthlyRevenue - stats.billing.totalCosts).toLocaleString()}
+                  </div>
+                  <Badge className="bg-purple-100 text-purple-700">
+                    +18.7% vs last month
+                  </Badge>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Cost Breakdown */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Cost Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-charcoal-700">Compute</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-charcoal-900">
+                          ${stats.billing.costBreakdown.compute.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          {((stats.billing.costBreakdown.compute / stats.billing.totalCosts) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-charcoal-700">Database</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-charcoal-900">
+                          ${stats.billing.costBreakdown.database.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          {((stats.billing.costBreakdown.database / stats.billing.totalCosts) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-charcoal-700">Storage</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-charcoal-900">
+                          ${stats.billing.costBreakdown.storage.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          {((stats.billing.costBreakdown.storage / stats.billing.totalCosts) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-charcoal-700">Bandwidth</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-charcoal-900">
+                          ${stats.billing.costBreakdown.bandwidth.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          {((stats.billing.costBreakdown.bandwidth / stats.billing.totalCosts) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pricing Structure */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Current Pricing</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <span className="text-sm text-charcoal-700">Compute per hour</span>
+                      <span className="text-sm font-medium text-charcoal-900">
+                        ${stats.billing.pricing.computePerHour.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <span className="text-sm text-charcoal-700">Storage per GB/month</span>
+                      <span className="text-sm font-medium text-charcoal-900">
+                        ${stats.billing.pricing.storagePerGB.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <span className="text-sm text-charcoal-700">Bandwidth per GB</span>
+                      <span className="text-sm font-medium text-charcoal-900">
+                        ${stats.billing.pricing.bandwidthPerGB.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <span className="text-sm text-charcoal-700">API calls per 1,000</span>
+                      <span className="text-sm font-medium text-charcoal-900">
+                        ${stats.billing.pricing.apiCallsPer1000.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Cost Users */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle>Top Cost Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.billing.userCosts
+                    .sort((a, b) => b.costs.total - a.costs.total)
+                    .map((user, index) => (
+                    <div key={user.userId} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-charcoal-900">{user.email}</div>
+                        <div className="text-sm text-charcoal-600">
+                          {user.monthlyUsage.apiCalls.toLocaleString()} API calls • {user.monthlyUsage.computeHours}h compute
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={
+                            user.tier === "enterprise" ? "default" : 
+                            user.tier === "premium" ? "secondary" : "outline"
+                          }>
+                            {user.tier}
+                          </Badge>
+                          <span className="text-xs text-charcoal-500">
+                            {user.monthlyUsage.storageGB.toFixed(1)}GB storage • {user.monthlyUsage.bandwidthGB.toFixed(1)}GB bandwidth
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-charcoal-900">
+                          ${user.costs.total.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          Compute: ${user.costs.compute.toFixed(2)} • Storage: ${user.costs.storage.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-charcoal-600">
+                          Bandwidth: ${user.costs.bandwidth.toFixed(2)}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

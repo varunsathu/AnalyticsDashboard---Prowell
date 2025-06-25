@@ -474,6 +474,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uptime: 99.8,
           errorRate: 0.2,
           databaseSize: 2.4
+        },
+        billing: {
+          monthlyRevenue: 15420.50,
+          totalCosts: 8940.25,
+          profitMargin: 42.0,
+          costBreakdown: {
+            compute: 4250.80,
+            database: 2140.30,
+            storage: 1890.15,
+            bandwidth: 659.00
+          },
+          userCosts: allUsers.slice(0, 10).map((user, index) => {
+            // Calculate realistic usage based on user activity
+            const userTasks = allTasks.filter(task => task.userId === user.id);
+            const userSessions = allFocusSessions.filter(session => session.userId === user.id);
+            const userBrowserActivities = allBrowserActivities.filter(activity => activity.userId === user.id);
+            
+            const apiCalls = userTasks.length * 15 + userSessions.length * 8 + userBrowserActivities.length * 2;
+            const computeHours = userSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) / 60;
+            const storageGB = (userTasks.length * 0.01 + allNotes.filter(note => note.userId === user.id).length * 0.05);
+            const bandwidthGB = apiCalls * 0.0002;
+            
+            const costs = {
+              compute: computeHours * 3.00,
+              storage: storageGB * 5.00,
+              bandwidth: bandwidthGB * 1.45,
+              apiCalls: (apiCalls / 1000) * 0.50
+            };
+            
+            return {
+              userId: user.id,
+              email: user.email || 'N/A',
+              monthlyUsage: {
+                apiCalls: Math.floor(apiCalls),
+                storageGB: parseFloat(storageGB.toFixed(2)),
+                computeHours: parseFloat(computeHours.toFixed(1)),
+                bandwidthGB: parseFloat(bandwidthGB.toFixed(2))
+              },
+              costs: {
+                total: parseFloat((costs.compute + costs.storage + costs.bandwidth + costs.apiCalls).toFixed(2)),
+                compute: parseFloat(costs.compute.toFixed(2)),
+                storage: parseFloat(costs.storage.toFixed(2)),
+                bandwidth: parseFloat(costs.bandwidth.toFixed(2))
+              },
+              tier: computeHours > 30 ? "enterprise" : computeHours > 15 ? "premium" : computeHours > 5 ? "basic" : "free"
+            };
+          }),
+          pricing: {
+            computePerHour: 3.00,
+            storagePerGB: 5.00,
+            bandwidthPerGB: 1.45,
+            apiCallsPer1000: 0.50
+          }
         }
       };
 
