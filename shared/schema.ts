@@ -171,6 +171,12 @@ export const insertTaskSchema = createInsertSchema(tasks).pick({
   priority: true,
   estimatedTime: true,
   dueDate: true,
+  status: true,
+}).partial({
+  description: true,
+  estimatedTime: true,
+  dueDate: true,
+  status: true,
 });
 
 export const updateTaskSchema = insertTaskSchema.partial().extend({
