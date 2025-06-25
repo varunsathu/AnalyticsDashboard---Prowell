@@ -29,6 +29,7 @@ export default function CalendarWidget() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState("");
   const [newEventType, setNewEventType] = useState("");
+  const [newEventDate, setNewEventDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [newEventStartTime, setNewEventStartTime] = useState("");
   const [newEventEndTime, setNewEventEndTime] = useState("");
   
@@ -54,6 +55,7 @@ export default function CalendarWidget() {
       setIsCreateDialogOpen(false);
       setNewEventTitle("");
       setNewEventType("");
+      setNewEventDate(format(new Date(), 'yyyy-MM-dd'));
       setNewEventStartTime("");
       setNewEventEndTime("");
       toast({
@@ -71,7 +73,7 @@ export default function CalendarWidget() {
   });
 
   const handleCreateEvent = () => {
-    if (!newEventTitle.trim() || !newEventType || !newEventStartTime || !newEventEndTime) {
+    if (!newEventTitle.trim() || !newEventType || !newEventDate || !newEventStartTime || !newEventEndTime) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -80,8 +82,9 @@ export default function CalendarWidget() {
       return;
     }
 
-    const startDate = new Date(selectedDate);
-    const endDate = new Date(selectedDate);
+    const eventDate = new Date(newEventDate);
+    const startDate = new Date(eventDate);
+    const endDate = new Date(eventDate);
     
     const [startHour, startMinute] = newEventStartTime.split(":").map(Number);
     const [endHour, endMinute] = newEventEndTime.split(":").map(Number);
@@ -89,13 +92,21 @@ export default function CalendarWidget() {
     startDate.setHours(startHour, startMinute, 0);
     endDate.setHours(endHour, endMinute, 0);
 
+    if (endDate <= startDate) {
+      toast({
+        title: "Error",
+        description: "End time must be after start time",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createEventMutation.mutate({
       title: newEventTitle,
       description: "",
       type: newEventType,
       startTime: startDate,
       endTime: endDate,
-      allDay: false,
     });
   };
 
@@ -129,6 +140,7 @@ export default function CalendarWidget() {
                 onClick={() => {
                   setNewEventTitle("");
                   setNewEventType("");
+                  setNewEventDate(format(selectedDate, 'yyyy-MM-dd'));
                   setNewEventStartTime("");
                   setNewEventEndTime("");
                 }}
@@ -184,10 +196,13 @@ export default function CalendarWidget() {
                   </div>
                 </div>
                 <div>
-                  <Label>Selected Date</Label>
-                  <p className="text-sm text-charcoal-600 mt-1">
-                    {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                  </p>
+                  <Label htmlFor="event-date">Event Date</Label>
+                  <Input
+                    id="event-date"
+                    type="date"
+                    value={newEventDate}
+                    onChange={(e) => setNewEventDate(e.target.value)}
+                  />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button 
@@ -244,7 +259,10 @@ export default function CalendarWidget() {
             {days.map((day, index) => (
               <div
                 key={`${day.toISOString()}-${index}`}
-                onClick={() => setSelectedDate(day)}
+                onClick={() => {
+                  setSelectedDate(day);
+                  setNewEventDate(format(day, 'yyyy-MM-dd'));
+                }}
                 className={`p-2 rounded cursor-pointer transition-colors ${
                   isToday(day)
                     ? "bg-teal-600 text-white font-semibold"
@@ -273,7 +291,14 @@ export default function CalendarWidget() {
                   variant="ghost"
                   size="sm"
                   className="text-teal-600 mt-2"
-                  onClick={() => setIsCreateDialogOpen(true)}
+                  onClick={() => {
+                    setNewEventTitle("");
+                    setNewEventType("");
+                    setNewEventDate(format(new Date(), 'yyyy-MM-dd'));
+                    setNewEventStartTime("");
+                    setNewEventEndTime("");
+                    setIsCreateDialogOpen(true);
+                  }}
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Add Event
