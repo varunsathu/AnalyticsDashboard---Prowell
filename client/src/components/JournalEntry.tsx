@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, BookOpen, Save, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, BookOpen, Save, Plus, ChevronLeft, ChevronRight, RotateCcw, FastForward, Rewind } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -45,15 +45,43 @@ export default function JournalEntry() {
   // Fetch journal entry for selected date
   const { data: entry, isLoading } = useQuery({
     queryKey: ["/api/journal", selectedDate],
+    queryFn: async () => {
+      const response = await fetch(`/api/journal/${selectedDate}`);
+      if (response.status === 404) {
+        return null; // No entry for this date
+      }
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal entry');
+      }
+      return response.json();
+    },
     enabled: !!selectedDate,
   });
 
   // Create/Update journal entry mutation
   const saveMutation = useMutation({
     mutationFn: async (data: InsertJournalEntry) => {
-      const method = entry ? "PATCH" : "POST";
-      const url = entry ? `/api/journal/${entry.id}` : "/api/journal";
-      return apiRequest(url, { method, body: JSON.stringify(data) });
+      let response;
+      if (entry) {
+        response = await fetch(`/api/journal/${entry.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        });
+      } else {
+        response = await fetch("/api/journal", {
+          method: "POST", 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        });
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save journal entry: ${response.statusText}`);
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
@@ -113,6 +141,24 @@ export default function JournalEntry() {
     setIsEditing(false);
   };
 
+  const jumpToDate = (date: string) => {
+    setSelectedDate(date);
+    setIsEditing(false);
+  };
+
+  const jumpToToday = () => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setIsEditing(false);
+  };
+
+  const jumpDays = (days: number) => {
+    const currentDate = new Date(selectedDate);
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + days);
+    setSelectedDate(newDate.toISOString().split('T')[0]);
+    setIsEditing(false);
+  };
+
   const handleSave = () => {
     if (!formData.content?.trim()) {
       toast({
@@ -160,32 +206,101 @@ export default function JournalEntry() {
 
   return (
     <div className="space-y-6">
-      {/* Date Navigation */}
+      {/* Enhanced Date Navigation */}
       <Card className="bg-white border border-charcoal-200">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDateChange('prev')}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => jumpDays(-7)}
+                title="Go back 1 week"
+              >
+                <Rewind className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDateChange('prev')}
+                title="Previous day"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            </div>
             
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-charcoal-600" />
               <CardTitle className="text-lg text-charcoal-900">
                 {formatDate(new Date(selectedDate))}
               </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={jumpToToday}
+                title="Go to today"
+                className="ml-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
             </div>
             
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDateChange('next')}
+                disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                title="Next day"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => jumpDays(7)}
+                disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                title="Go forward 1 week"
+              >
+                <FastForward className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Quick Jump Options */}
+          <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-charcoal-100">
+            <span className="text-sm text-charcoal-600">Quick jump:</span>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => handleDateChange('next')}
-              disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+              onClick={() => jumpDays(-1)}
+              className="text-xs"
             >
-              <ChevronRight className="w-4 h-4" />
+              Yesterday
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => jumpDays(-3)}
+              className="text-xs"
+            >
+              3 days ago
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => jumpDays(-7)}
+              className="text-xs"
+            >
+              Last week
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => jumpDays(-30)}
+              className="text-xs"
+            >
+              Last month
             </Button>
           </div>
         </CardHeader>
@@ -423,7 +538,7 @@ export default function JournalEntry() {
 
               {entry.tags && entry.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {entry.tags.map((tag, index) => (
+                  {entry.tags.map((tag: string, index: number) => (
                     <Badge key={index} variant="secondary">
                       {tag}
                     </Badge>
