@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [showSmartFocusNotification, setShowSmartFocusNotification] = useState(false);
   const [smartFocusActivityType, setSmartFocusActivityType] = useState('');
-  const [activeView, setActiveView] = useState<'dashboard' | 'journal'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'analytics'>('dashboard');
   
   const { focusMode, toggleFocusMode } = useFocusMode();
   const { isTracking, currentActivity } = useBrowserTracking();
@@ -68,6 +68,16 @@ export default function Dashboard() {
             >
               Journal
             </button>
+            <button
+              onClick={() => setActiveView('analytics')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeView === 'analytics'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-white text-charcoal-700 border border-charcoal-200 hover:bg-charcoal-50'
+              }`}
+            >
+              Analytics
+            </button>
           </div>
         </div>
 
@@ -75,6 +85,22 @@ export default function Dashboard() {
           {activeView === 'journal' ? (
             /* Journal View */
             <JournalEntry />
+          ) : activeView === 'analytics' ? (
+            /* Analytics View */
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Browser & Activity Analytics */}
+                <div className="space-y-8">
+                  <ActivityTracker />
+                  <WeeklyReport />
+                </div>
+
+                {/* Right Column - Health Metrics */}
+                <div className="space-y-8">
+                  <HealthMetrics />
+                </div>
+              </div>
+            </div>
           ) : (
             /* Dashboard View */
             <div>
@@ -108,12 +134,10 @@ export default function Dashboard() {
                   {/* Stats Overview moved below notepad */}
                   <StatsOverview />
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column */}
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="space-y-8">
                       <TaskManager />
-                      <ActivityTracker />
-                      <WeeklyReport />
                     </div>
 
                     {/* Right Column */}
@@ -121,7 +145,6 @@ export default function Dashboard() {
                       <SmartNotes />
                       <CalendarWidget />
                       <FocusTimer />
-                      <HealthMetrics />
                     </div>
                   </div>
                 </div>

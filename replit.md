@@ -6,7 +6,7 @@ A comprehensive productivity dashboard application built with React, TypeScript,
 
 ## System Architecture
 
-The application follows a full-stack architecture with clear separation between client and server components:
+The application follows a full-stack architecture with clear separation between client and server components and organized into three main user interface sections: Dashboard, Journal, and Analytics.
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
@@ -87,6 +87,13 @@ The application follows a full-stack architecture with clear separation between 
 - **Clean Interface**: Distraction-free writing experience
 - **Focus Optimization**: Larger text area and enhanced styling in focus mode
 - **Monospace Font**: Clean, readable coding font for better text clarity
+
+### Analytics Dashboard
+- **Dedicated Analytics Tab**: Separate section for data insights and metrics
+- **Browser Activity Tracking**: Comprehensive tracking with real-time categorization
+- **Weekly Insights**: Weekly report generation with productivity insights and recommendations
+- **Health Metrics Integration**: Universal health device integration and tracking
+- **Clean Layout**: Organized two-column layout for optimal data visualization
 
 ### Universal Health Device Integration
 - **Apple Watch**: HealthKit integration with high accuracy tracking
@@ -176,6 +183,7 @@ The application follows a full-stack architecture with clear separation between 
 ✓ **Added operational cost tracking dashboard showing infrastructure expenses and resource consumption analysis**
 ✓ **Replaced stats overview grid with plain notepad component for seamless writing experience**
 ✓ **Implemented comprehensive journaling/diary feature with structured daily entries, mood tracking, gratitude sections, and goal setting**
+✓ **Created Analytics tab to organize browser activity tracking, weekly insights, and health metrics in dedicated section**
 
 ## User Preferences
 
