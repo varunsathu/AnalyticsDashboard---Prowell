@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mic, X } from "lucide-react";
+import { Mic } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { useToast } from "@/hooks/use-toast";
@@ -92,14 +92,9 @@ export default function QuickCaptureModal({ isOpen, onClose }: QuickCaptureModal
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-md mx-4">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-bold text-charcoal-900">
-              Quick Capture
-            </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg font-bold text-charcoal-900">
+            Quick Capture
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
