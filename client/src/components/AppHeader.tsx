@@ -1,6 +1,15 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Plus } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Plus, Settings, Moon, Sun, LogOut, Zap, Brain, Palette, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppHeaderProps {
@@ -11,6 +20,29 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode }: AppHeaderProps) {
   const { user } = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const handleLogout = () => {
+    // Redirect to logout endpoint
+    window.location.href = '/auth/logout';
+  };
+
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    document.documentElement.classList.toggle('dark', newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
+
+  // Initialize theme on load
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    
+    setIsDarkMode(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
+  }, []);
 
   const getGreeting = () => {
     // Get current time in user's local timezone (browser automatically handles this)
@@ -143,7 +175,7 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
               </Button>
             )}
 
-            {/* Focus Mode Toggle */}
+            {/* Focus Mode Toggle with Settings Dropdown */}
             <div className="flex items-center space-x-3">
               <span className="text-sm text-charcoal-600">
                 {focusMode ? "Deep Focus" : "Smart Focus"}
@@ -155,6 +187,51 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                   <span className="text-xs text-green-600 font-medium">Active</span>
                 </div>
               )}
+              
+              {/* Settings Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem onClick={toggleTheme}>
+                    {isDarkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                    {isDarkMode ? 'Light Theme' : 'Dark Theme'}
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Focus Presets
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Productivity Insights
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem>
+                    <Palette className="mr-2 h-4 w-4" />
+                    Ambient Sounds
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Preferences
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Quick Thoughts in Focus Mode */}
