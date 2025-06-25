@@ -109,11 +109,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "taskIds must be an array" });
       }
 
-      const results = await Promise.all(
-        taskIds.map(id => storage.deleteTask(userId, parseInt(id)))
-      );
+      let deletedCount = 0;
+      for (const id of taskIds) {
+        try {
+          const success = await storage.deleteTask(userId, parseInt(id));
+          if (success) deletedCount++;
+        } catch (error) {
+          console.error(`Failed to delete task ${id}:`, error);
+        }
+      }
       
-      const deletedCount = results.filter(Boolean).length;
       res.json({ success: true, deletedCount });
     } catch (error) {
       console.error('Error bulk deleting tasks:', error);

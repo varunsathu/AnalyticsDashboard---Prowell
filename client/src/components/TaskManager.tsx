@@ -342,10 +342,15 @@ export default function TaskManager() {
 
         {/* Bulk Actions - Only show when tasks are selected */}
         {showBulkActions && (
-          <div className="flex items-center justify-between bg-teal-50 border border-teal-200 rounded-lg p-3 mt-4">
-            <span className="text-sm text-teal-700 font-medium">
-              {selectedTasks.size} task{selectedTasks.size !== 1 ? 's' : ''} selected
-            </span>
+          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-amber-700 font-medium">
+                {selectedTasks.size} task{selectedTasks.size !== 1 ? 's' : ''} selected
+              </span>
+              <span className="text-xs text-amber-600">
+                Hover over tasks to select them
+              </span>
+            </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={clearSelection}>
                 Clear
@@ -387,11 +392,19 @@ export default function TaskManager() {
                   }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={task.status === "completed"}
-                      onCheckedChange={() => toggleTaskMutation.mutate(task)}
-                      className="mt-1"
-                    />
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={() => toggleTaskSelection(task.id)}
+                        className="opacity-0 group-hover:opacity-100"
+                        title="Select for bulk actions"
+                      />
+                      <Checkbox
+                        checked={task.status === "completed"}
+                        onCheckedChange={() => toggleTaskMutation.mutate(task)}
+                        title="Mark as complete"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4
@@ -402,11 +415,6 @@ export default function TaskManager() {
                           {task.title}
                         </h4>
                         <div className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={selectedTasks.has(task.id)}
-                            onCheckedChange={() => toggleTaskSelection(task.id)}
-                            className="opacity-0 group-hover:opacity-100 mr-2"
-                          />
                           {getCategoryBadge(task.category)}
                           <Badge className={`${priorityColor.bg} ${priorityColor.text} text-xs`}>
                             {task.priority}
