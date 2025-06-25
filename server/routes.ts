@@ -741,8 +741,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Category created successfully:', category);
       res.json(category);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Category validation error:', error.errors);
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
       console.error('Error creating category:', error);
-      res.status(400).json({ message: "Invalid category data", error: error.message });
+      res.status(500).json({ message: "Failed to create category", error: error.message });
     }
   });
 

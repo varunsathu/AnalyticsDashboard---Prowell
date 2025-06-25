@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Calendar, Clock, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, formatRelative } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Category } from "@shared/schema";
 
@@ -37,7 +37,7 @@ export default function TaskManager() {
   const [newTaskData, setNewTaskData] = useState({
     title: "",
     description: "",
-    category: "work",
+    category: "",
     priority: "medium",
     dueDate: "",
     estimatedTime: ""
@@ -434,15 +434,20 @@ export default function TaskManager() {
                   <div className="flex items-start space-x-3">
                     <div className="flex items-center space-x-2 mt-1">
                       <Checkbox
-                        checked={selectedTasks.has(task.id)}
-                        onCheckedChange={() => toggleTaskSelection(task.id)}
-                        className="opacity-0 group-hover:opacity-100"
-                        title="Select for bulk actions"
-                      />
-                      <Checkbox
-                        checked={task.status === "completed"}
-                        onCheckedChange={() => toggleTaskMutation.mutate(task)}
-                        title="Mark as complete"
+                        checked={task.status === "completed" || selectedTasks.has(task.id)}
+                        onCheckedChange={(checked) => {
+                          if (task.status === "completed") {
+                            // If task is completed, uncheck toggles completion
+                            toggleTaskMutation.mutate(task);
+                          } else if (checked) {
+                            // If checking, add to selection
+                            toggleTaskSelection(task.id);
+                          } else {
+                            // If unchecking and not completed, toggle completion
+                            toggleTaskMutation.mutate(task);
+                          }
+                        }}
+                        title={task.status === "completed" ? "Mark as incomplete" : selectedTasks.has(task.id) ? "Selected for bulk actions" : "Mark as complete or select"}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -484,7 +489,7 @@ export default function TaskManager() {
                           {task.dueDate && (
                             <span className="flex items-center space-x-1 text-xs text-charcoal-500">
                               <Calendar className="w-3 h-3" />
-                              <span>Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}</span>
+                              <span>Due {formatRelative(new Date(task.dueDate), new Date())}</span>
                             </span>
                           )}
                           {task.estimatedTime && (
