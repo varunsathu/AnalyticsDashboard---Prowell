@@ -475,57 +475,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errorRate: 0.2,
           databaseSize: 2.4
         },
-        billing: {
-          monthlyRevenue: 15420.50,
-          totalCosts: 8940.25,
-          profitMargin: 42.0,
-          costBreakdown: {
-            compute: 4250.80,
-            database: 2140.30,
-            storage: 1890.15,
-            bandwidth: 659.00
+        costs: {
+          monthlyTotal: 2847.50,
+          dailyAverage: 94.92,
+          yearlyProjected: 34170.00,
+          breakdown: {
+            compute: 1245.80,
+            database: 678.90,
+            storage: 234.50,
+            bandwidth: 189.30,
+            monitoring: 156.00,
+            backup: 343.00
           },
-          userCosts: allUsers.slice(0, 10).map((user, index) => {
-            // Calculate realistic usage based on user activity
+          resourceUsage: {
+            cpuHours: allFocusSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) / 60 + (allTasks.length * 0.1),
+            memoryGBHours: (allUsers.length * 2.5 * 24 * 30), // Estimated 2.5GB per user per hour
+            storageGB: parseFloat((allTasks.length * 0.01 + allNotes.length * 0.05 + allBrowserActivities.length * 0.001).toFixed(1)),
+            bandwidthGB: parseFloat(((allTasks.length + allNotes.length + allBrowserActivities.length) * 0.002).toFixed(1)),
+            databaseConnections: allTasks.length + allNotes.length + allFocusSessions.length + allBrowserActivities.length,
+            apiRequests: allTasks.length * 15 + allNotes.length * 10 + allFocusSessions.length * 8 + allBrowserActivities.length * 2
+          },
+          topResourceUsers: allUsers.slice(0, 10).map((user, index) => {
+            // Calculate realistic resource usage based on user activity
             const userTasks = allTasks.filter(task => task.userId === user.id);
             const userSessions = allFocusSessions.filter(session => session.userId === user.id);
             const userBrowserActivities = allBrowserActivities.filter(activity => activity.userId === user.id);
+            const userNotes = allNotes.filter(note => note.userId === user.id);
             
-            const apiCalls = userTasks.length * 15 + userSessions.length * 8 + userBrowserActivities.length * 2;
-            const computeHours = userSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) / 60;
-            const storageGB = (userTasks.length * 0.01 + allNotes.filter(note => note.userId === user.id).length * 0.05);
+            const apiCalls = userTasks.length * 15 + userSessions.length * 8 + userBrowserActivities.length * 2 + userNotes.length * 10;
+            const cpuMinutes = userSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) + (userTasks.length * 2);
+            const storageGB = (userTasks.length * 0.01 + userNotes.length * 0.05 + userBrowserActivities.length * 0.001);
             const bandwidthGB = apiCalls * 0.0002;
             
-            const costs = {
-              compute: computeHours * 3.00,
-              storage: storageGB * 5.00,
-              bandwidth: bandwidthGB * 1.45,
-              apiCalls: (apiCalls / 1000) * 0.50
-            };
+            // Estimate infrastructure cost per user
+            const estimatedCost = (cpuMinutes / 60) * 0.58 + storageGB * 5.12 + bandwidthGB * 0.09 + (apiCalls / 1000) * 0.003;
             
             return {
               userId: user.id,
               email: user.email || 'N/A',
-              monthlyUsage: {
-                apiCalls: Math.floor(apiCalls),
+              resourceUsage: {
+                cpuMinutes: Math.floor(cpuMinutes),
                 storageGB: parseFloat(storageGB.toFixed(2)),
-                computeHours: parseFloat(computeHours.toFixed(1)),
+                apiCalls: Math.floor(apiCalls),
                 bandwidthGB: parseFloat(bandwidthGB.toFixed(2))
               },
-              costs: {
-                total: parseFloat((costs.compute + costs.storage + costs.bandwidth + costs.apiCalls).toFixed(2)),
-                compute: parseFloat(costs.compute.toFixed(2)),
-                storage: parseFloat(costs.storage.toFixed(2)),
-                bandwidth: parseFloat(costs.bandwidth.toFixed(2))
-              },
-              tier: computeHours > 30 ? "enterprise" : computeHours > 15 ? "premium" : computeHours > 5 ? "basic" : "free"
+              estimatedCost: parseFloat(estimatedCost.toFixed(2))
             };
           }),
-          pricing: {
-            computePerHour: 3.00,
-            storagePerGB: 5.00,
-            bandwidthPerGB: 1.45,
-            apiCallsPer1000: 0.50
+          trends: {
+            lastMonth: 2634.20,
+            growth: 8.1,
+            forecast: 3089.40
           }
         }
       };
