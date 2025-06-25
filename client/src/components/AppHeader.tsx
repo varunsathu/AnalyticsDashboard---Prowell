@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppHeaderProps {
   onQuickCapture: () => void;
@@ -9,11 +10,52 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode }: AppHeaderProps) {
+  const { user } = useAuth();
+
   const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    // Get current time in user's local timezone (browser automatically handles this)
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // More nuanced time-based greetings
+    if (hour >= 5 && hour < 12) return "Good morning";
+    if (hour >= 12 && hour < 17) return "Good afternoon";
+    if (hour >= 17 && hour < 22) return "Good evening";
+    return "Good night"; // Late night/early morning hours
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return "there";
+    
+    // Priority: firstName, then firstName + lastName, then email username
+    if (user.firstName) {
+      return user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName;
+    }
+    
+    // Fallback to email username if no first name
+    if (user.email) {
+      const emailUsername = user.email.split('@')[0];
+      // Capitalize first letter and make it more readable
+      return emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+    }
+    
+    return "there";
+  };
+
+  const getUserInitials = () => {
+    if (!user) return "U";
+    
+    if (user.firstName) {
+      const firstInitial = user.firstName.charAt(0).toUpperCase();
+      const lastInitial = user.lastName ? user.lastName.charAt(0).toUpperCase() : "";
+      return firstInitial + lastInitial;
+    }
+    
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    
+    return "U";
   };
 
   return (
@@ -23,7 +65,7 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
           <div className="flex items-center space-x-6">
             <div>
               <h1 className="text-2xl font-bold text-charcoal-900">
-                {getGreeting()}, Varun 👋
+                {getGreeting()}, {getUserDisplayName()} 👋
               </h1>
               <p className="text-charcoal-600 text-sm mt-1">
                 Ready to tackle your goals today?
@@ -52,7 +94,7 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
 
             {/* Profile */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold">
-              V
+              {getUserInitials()}
             </div>
           </div>
         </div>
