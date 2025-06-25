@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { z } from "zod";
 import { storage } from "./storage";
 import {
   insertTaskSchema,
@@ -10,6 +11,10 @@ import {
   insertFocusSessionSchema,
   insertBrowserActivitySchema,
   insertHealthMetricSchema,
+  insertWeeklyReportSchema,
+  insertJournalEntrySchema,
+  updateJournalEntrySchema,
+  insertCategorySchema,
   users,
   tasks,
   notes,
@@ -775,21 +780,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error cleaning up tasks:', error);
       res.status(500).json({ message: "Failed to cleanup tasks" });
-    }
-  });
-
-  app.delete("/api/categories/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = getUserId(req);
-      const { id } = req.params;
-      const success = await storage.deleteCategory(userId, parseInt(id));
-      if (!success) {
-        return res.status(404).json({ message: "Category not found or cannot be deleted" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      res.status(500).json({ message: "Failed to delete category" });
     }
   });
 
