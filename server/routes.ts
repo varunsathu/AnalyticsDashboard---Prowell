@@ -110,26 +110,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notes", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      console.log('Creating note for user:', userId, 'with data:', req.body);
       const noteData = insertNoteSchema.parse(req.body);
       const note = await storage.createNote(userId, noteData);
+      console.log('Note created successfully:', note);
       res.json(note);
     } catch (error) {
-      res.status(400).json({ message: "Invalid note data" });
+      console.error('Error creating note:', error);
+      res.status(400).json({ message: "Invalid note data", error: error.message });
     }
   });
 
-  app.put("/api/notes/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/notes/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const noteId = parseInt(req.params.id);
-      const noteData = insertNoteSchema.parse(req.body);
-      const note = await storage.updateNote(userId, noteId, noteData);
+      const updates = req.body;
+      console.log('Updating note:', noteId, 'for user:', userId, 'with data:', updates);
+      const note = await storage.updateNote(userId, noteId, updates);
       if (!note) {
         return res.status(404).json({ message: "Note not found" });
       }
+      console.log('Note updated successfully:', note);
       res.json(note);
     } catch (error) {
-      res.status(400).json({ message: "Invalid note data" });
+      console.error('Error updating note:', error);
+      res.status(500).json({ message: "Failed to update note", error: error.message });
     }
   });
 
@@ -151,12 +157,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const query = req.query.q as string;
-      if (!query) {
-        return res.status(400).json({ message: "Query parameter is required" });
+      if (!query || query.trim() === '') {
+        return res.json([]); // Return empty array for empty queries
       }
       const notes = await storage.searchNotes(userId, query);
       res.json(notes);
     } catch (error) {
+      console.error('Error searching notes:', error);
       res.status(500).json({ message: "Failed to search notes" });
     }
   });

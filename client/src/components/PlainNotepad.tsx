@@ -29,10 +29,8 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
   // Create note mutation
   const createNoteMutation = useMutation({
     mutationFn: async (noteData: InsertNote) => {
-      return apiRequest("/api/notes", {
-        method: "POST",
-        body: JSON.stringify(noteData),
-      });
+      const res = await apiRequest("POST", "/api/notes", noteData);
+      return res.json();
     },
     onSuccess: (newNote) => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
@@ -55,10 +53,8 @@ export default function PlainNotepad({ focusMode = false }: PlainNotepadProps) {
   // Update note mutation
   const updateNoteMutation = useMutation({
     mutationFn: async ({ id, noteData }: { id: number; noteData: Partial<InsertNote> }) => {
-      return apiRequest(`/api/notes/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(noteData),
-      });
+      const res = await apiRequest("PATCH", `/api/notes/${id}`, noteData);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
