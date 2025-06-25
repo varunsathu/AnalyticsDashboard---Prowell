@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Plus, Settings, LogOut, Zap, Brain, Palette, ChevronDown } from "lucide-react";
+import { Plus, Settings, LogOut, Zap, Brain, Palette } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppHeaderProps {
@@ -170,45 +170,6 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                 </div>
               )}
               
-              {/* Settings Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem>
-                    <Brain className="mr-2 h-4 w-4" />
-                    Focus Presets
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Productivity Insights
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem>
-                    <Palette className="mr-2 h-4 w-4" />
-                    Ambient Sounds
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Preferences
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
 
             {/* Quick Thoughts in Focus Mode */}
@@ -224,10 +185,54 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
               </Button>
             )}
 
-            {/* Profile */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold">
-              {getUserInitials()}
-            </div>
+            {/* Profile with Settings Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-10 h-10 rounded-full p-0 bg-gradient-to-br from-teal-400 to-teal-600 hover:from-teal-500 hover:to-teal-700">
+                  <div className="w-full h-full rounded-full flex items-center justify-center text-white font-semibold">
+                    {getUserInitials()}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{getUserDisplayName()}</span>
+                    {user?.email && (
+                      <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem>
+                  <Brain className="mr-2 h-4 w-4" />
+                  Focus Presets
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Productivity Insights
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem>
+                  <Palette className="mr-2 h-4 w-4" />
+                  Ambient Sounds
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Preferences
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
