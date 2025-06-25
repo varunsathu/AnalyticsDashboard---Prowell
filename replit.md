@@ -83,8 +83,10 @@ The application follows a full-stack architecture with clear separation between 
 
 ### Plain Notepad
 - **Always Available**: Accessible in both normal and focus modes
-- **Auto-save**: Local storage with automatic saving every 2 seconds
-- **Clean Interface**: Distraction-free writing experience
+- **Database Integration**: Notes saved to database with proper persistence
+- **Note Management**: Load existing notes, create new notes, and manage note collection
+- **Auto-save**: Automatic saving after initial creation to prevent data loss
+- **Clean Interface**: Distraction-free writing experience with title support
 - **Focus Optimization**: Larger text area and enhanced styling in focus mode
 - **Monospace Font**: Clean, readable coding font for better text clarity
 
