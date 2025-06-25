@@ -72,7 +72,7 @@ export default function TaskManager() {
         description: taskData.description || undefined,
         category: taskData.category,
         priority: taskData.priority,
-        dueDate: taskData.dueDate || undefined,
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate + 'T00:00:00').toISOString() : undefined,
         estimatedTime: taskData.estimatedTime ? Number(taskData.estimatedTime) : undefined,
         status: "pending"
       };
@@ -278,6 +278,11 @@ export default function TaskManager() {
   };
 
   const getCategoryBadge = (categoryName: string) => {
+    // Don't show badge if category is empty or just whitespace
+    if (!categoryName || !categoryName.trim()) {
+      return null;
+    }
+    
     const category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
     const color = category?.color || "blue";
     const colors = getColorClasses(color);
@@ -354,7 +359,7 @@ export default function TaskManager() {
         <div className="flex items-center space-x-3 mt-4 flex-wrap">
           {categories.map(category => {
             const count = categoryCounts[category.name.toLowerCase()] || 0;
-            const colors = getColorClasses(category.color);
+            const colors = getColorClasses(category.color || "blue");
             return (
               <div
                 key={category.id}
@@ -365,12 +370,12 @@ export default function TaskManager() {
                 <Badge variant="secondary" className={`text-xs ${colors.bg} ${colors.text}`}>
                   {count}
                 </Badge>
-                {!category.isDefault && (
+                {!(category.isDefault ?? false) && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="opacity-0 group-hover:opacity-100 absolute -top-2 -right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full"
-                    onClick={() => handleDeleteCategory(category.id, category.isDefault)}
+                    onClick={() => handleDeleteCategory(category.id, category.isDefault || false)}
                   >
                     <X className="w-3 h-3" />
                   </Button>
@@ -460,7 +465,7 @@ export default function TaskManager() {
                           {task.title}
                         </h4>
                         <div className="flex items-center space-x-2">
-                          {getCategoryBadge(task.category)}
+                          {task.category && getCategoryBadge(task.category)}
                           <Badge className={`${priorityColor.bg} ${priorityColor.text} text-xs`}>
                             {task.priority}
                           </Badge>
@@ -489,7 +494,7 @@ export default function TaskManager() {
                           {task.dueDate && (
                             <span className="flex items-center space-x-1 text-xs text-charcoal-500">
                               <Calendar className="w-3 h-3" />
-                              <span>Due {formatRelative(new Date(task.dueDate), new Date())}</span>
+                              <span>Due {formatRelative(new Date(task.dueDate), new Date(), { weekStartsOn: 1 })}</span>
                             </span>
                           )}
                           {task.estimatedTime && (
@@ -499,7 +504,9 @@ export default function TaskManager() {
                             </span>
                           )}
                         </div>
-                        <div className={`w-3 h-3 rounded-full ${categoryColor.dot}`} />
+                        {task.category && task.category.trim() && (
+                          <div className={`w-3 h-3 rounded-full ${categoryColor.dot}`} />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -623,6 +630,7 @@ export default function TaskManager() {
                     id="dueDate"
                     type="date"
                     value={newTaskData.dueDate}
+                    min={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setNewTaskData({...newTaskData, dueDate: e.target.value})}
                   />
                 </div>
