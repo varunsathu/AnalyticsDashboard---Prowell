@@ -118,13 +118,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const id of taskIds) {
         try {
-          console.log(`Attempting to delete task ${id} for user ${userId}`);
-          const success = await storage.deleteTask(userId, parseInt(id));
-          console.log(`Delete result for task ${id}:`, success);
+          const taskId = Number(id);
+          if (isNaN(taskId)) {
+            errors.push(`Invalid task ID: ${id}`);
+            continue;
+          }
+          
+          console.log(`Attempting to delete task ${taskId} for user ${userId}`);
+          const success = await storage.deleteTask(userId, taskId);
+          console.log(`Delete result for task ${taskId}:`, success);
           if (success) {
             deletedCount++;
           } else {
-            errors.push(`Task ${id} not found or unauthorized`);
+            errors.push(`Task ${taskId} not found or unauthorized`);
           }
         } catch (error) {
           console.error(`Failed to delete task ${id}:`, error);

@@ -154,8 +154,17 @@ export default function TaskManager() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (taskIds: number[]) => {
       console.log('Frontend: Deleting tasks:', taskIds);
-      const response = await apiRequest("DELETE", "/api/tasks/bulk", { taskIds });
-      return response;
+      // Ensure taskIds are numbers
+      const validTaskIds = taskIds.filter(id => typeof id === 'number' && !isNaN(id));
+      console.log('Frontend: Valid task IDs:', validTaskIds);
+      
+      if (validTaskIds.length === 0) {
+        throw new Error('No valid task IDs provided');
+      }
+      
+      const response = await apiRequest("DELETE", "/api/tasks/bulk", { taskIds: validTaskIds });
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data) => {
       console.log('Frontend: Delete success:', data);
@@ -216,7 +225,9 @@ export default function TaskManager() {
 
   const handleBulkDelete = () => {
     if (selectedTasks.size === 0) return;
-    bulkDeleteMutation.mutate(Array.from(selectedTasks));
+    const taskIds = Array.from(selectedTasks).map(id => Number(id));
+    console.log('Frontend: Bulk deleting tasks:', taskIds);
+    bulkDeleteMutation.mutate(taskIds);
   };
 
   const toggleTaskSelection = (taskId: number) => {
@@ -427,7 +438,10 @@ export default function TaskManager() {
                             variant="ghost" 
                             size="sm" 
                             className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
-                            onClick={() => bulkDeleteMutation.mutate([task.id])}
+                            onClick={() => {
+                              console.log('Frontend: Deleting single task:', task.id, typeof task.id);
+                              bulkDeleteMutation.mutate([Number(task.id)]);
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
