@@ -177,6 +177,8 @@ export const insertTaskSchema = createInsertSchema(tasks).pick({
   estimatedTime: true,
   dueDate: true,
   status: true,
+}).extend({
+  dueDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
 });
 
 export const updateTaskSchema = insertTaskSchema.partial().extend({

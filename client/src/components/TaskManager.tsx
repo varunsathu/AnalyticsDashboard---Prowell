@@ -70,7 +70,7 @@ export default function TaskManager() {
         description: taskData.description || undefined,
         category: taskData.category,
         priority: taskData.priority,
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : undefined,
+        dueDate: taskData.dueDate || undefined,
         estimatedTime: taskData.estimatedTime ? Number(taskData.estimatedTime) : undefined,
         status: "pending"
       };
