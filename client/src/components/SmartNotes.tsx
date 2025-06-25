@@ -12,7 +12,7 @@ export default function SmartNotes() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: notes = [] } = useQuery<Note[]>({
-    queryKey: ["/api/notes", { search: searchQuery }],
+    queryKey: searchQuery ? ["/api/notes/search", { q: searchQuery }] : ["/api/notes"],
   });
 
   const mockNotes = [

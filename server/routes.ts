@@ -34,11 +34,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (req.user?.claims?.sub) {
       return req.user.claims.sub;
     }
-    return "demo-user-id"; // Fallback for development
+    // Create demo user if not authenticated (for development)
+    return "demo-user-id";
   };
 
   // Tasks
-  app.get("/api/tasks", async (req: any, res) => {
+  app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const tasks = await storage.getUserTasks(userId);
@@ -48,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", async (req: any, res) => {
+  app.post("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const taskData = insertTaskSchema.parse(req.body);
@@ -59,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tasks/:id", async (req: any, res) => {
+  app.put("/api/tasks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const taskId = parseInt(req.params.id);
@@ -74,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tasks/:id", async (req: any, res) => {
+  app.delete("/api/tasks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const taskId = parseInt(req.params.id);
@@ -89,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notes
-  app.get("/api/notes", async (req: any, res) => {
+  app.get("/api/notes", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const notes = await storage.getUserNotes(userId);
@@ -99,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notes", async (req: any, res) => {
+  app.post("/api/notes", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const noteData = insertNoteSchema.parse(req.body);
@@ -110,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/notes/:id", async (req: any, res) => {
+  app.put("/api/notes/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const noteId = parseInt(req.params.id);
@@ -125,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/notes/:id", async (req: any, res) => {
+  app.delete("/api/notes/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const noteId = parseInt(req.params.id);
@@ -139,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/notes/search", async (req: any, res) => {
+  app.get("/api/notes/search", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const query = req.query.q as string;
@@ -154,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Activities
-  app.get("/api/activities", async (req: any, res) => {
+  app.get("/api/activities", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
@@ -166,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/activities", async (req: any, res) => {
+  app.post("/api/activities", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const activityData = insertActivitySchema.parse(req.body);
@@ -177,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/activities/stats", async (req: any, res) => {
+  app.get("/api/activities/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const date = req.query.date ? new Date(req.query.date as string) : new Date();
@@ -189,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events
-  app.get("/api/events", async (req: any, res) => {
+  app.get("/api/events", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
@@ -201,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/events", async (req: any, res) => {
+  app.post("/api/events", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const eventData = insertEventSchema.parse(req.body);
@@ -212,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/events/:id", async (req: any, res) => {
+  app.put("/api/events/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const eventId = parseInt(req.params.id);
@@ -227,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/events/:id", async (req: any, res) => {
+  app.delete("/api/events/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const eventId = parseInt(req.params.id);
@@ -242,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Focus Sessions
-  app.get("/api/focus-sessions", async (req: any, res) => {
+  app.get("/api/focus-sessions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
@@ -254,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/focus-sessions", async (req: any, res) => {
+  app.post("/api/focus-sessions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const sessionData = insertFocusSessionSchema.parse(req.body);
@@ -265,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/focus-sessions/:id", async (req: any, res) => {
+  app.put("/api/focus-sessions/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const sessionId = parseInt(req.params.id);
@@ -281,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Browser Activities
-  app.get("/api/browser-activities", async (req: any, res) => {
+  app.get("/api/browser-activities", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
@@ -293,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/browser-activities", async (req: any, res) => {
+  app.post("/api/browser-activities", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const activityData = insertBrowserActivitySchema.parse(req.body);
@@ -304,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/browser-activities/stats", async (req: any, res) => {
+  app.get("/api/browser-activities/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const date = req.query.date ? new Date(req.query.date as string) : new Date();
@@ -316,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Health Metrics
-  app.get("/api/health-metrics", async (req: any, res) => {
+  app.get("/api/health-metrics", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const type = req.query.type as string;
@@ -329,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/health-metrics", async (req: any, res) => {
+  app.post("/api/health-metrics", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const metricData = insertHealthMetricSchema.parse(req.body);
@@ -340,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/health-metrics/latest", async (req: any, res) => {
+  app.get("/api/health-metrics/latest", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const metrics = await storage.getLatestHealthMetrics(userId);
@@ -350,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/health-metrics/sync", async (req: any, res) => {
+  app.post("/api/health-metrics/sync", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { deviceType, source } = req.body;
@@ -364,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly Reports
-  app.get("/api/weekly-reports", async (req: any, res) => {
+  app.get("/api/weekly-reports", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
@@ -375,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/weekly-reports/generate", async (req: any, res) => {
+  app.post("/api/weekly-reports/generate", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const weekStart = new Date(req.body.weekStart);
@@ -387,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get("/api/dashboard/stats", async (req: any, res) => {
+  app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const today = new Date();
