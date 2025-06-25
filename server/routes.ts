@@ -102,8 +102,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/tasks/bulk", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { taskIds } = req.body;
-      console.log('Bulk deleting tasks:', taskIds, 'for user:', userId);
+      const requestBody = req.body;
+      console.log('Raw request body:', JSON.stringify(requestBody));
+      
+      const { taskIds } = requestBody;
+      console.log('Extracted taskIds:', taskIds, 'type:', typeof taskIds, 'for user:', userId);
+      
+      if (!taskIds) {
+        return res.status(400).json({ message: "taskIds field is required" });
+      }
       
       if (!Array.isArray(taskIds)) {
         return res.status(400).json({ message: "taskIds must be an array" });
@@ -116,11 +123,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let deletedCount = 0;
       const errors = [];
       
-      for (const id of taskIds) {
+      for (let i = 0; i < taskIds.length; i++) {
+        const id = taskIds[i];
+        console.log(`Processing taskId[${i}]:`, id, 'type:', typeof id);
+        
         try {
-          const taskId = Number(id);
-          if (isNaN(taskId)) {
-            errors.push(`Invalid task ID: ${id}`);
+          let taskId;
+          if (typeof id === 'number') {
+            taskId = id;
+          } else if (typeof id === 'string') {
+            taskId = parseInt(id, 10);
+          } else {
+            taskId = Number(id);
+          }
+          
+          console.log(`Converted taskId:`, taskId, 'isNaN:', isNaN(taskId));
+          
+          if (isNaN(taskId) || taskId <= 0) {
+            errors.push(`Invalid task ID: ${id} (converted to ${taskId})`);
             continue;
           }
           

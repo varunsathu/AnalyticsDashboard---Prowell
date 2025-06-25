@@ -315,17 +315,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTask(userId: string, taskId: number): Promise<boolean> {
-    console.log(`Deleting task ${taskId} for user ${userId}`);
+    console.log(`Storage: Deleting task ${taskId} (type: ${typeof taskId}) for user ${userId}`);
+    
+    if (typeof taskId !== 'number' || isNaN(taskId)) {
+      console.error(`Storage: Invalid taskId type or value:`, taskId, typeof taskId);
+      throw new Error(`Invalid task ID: ${taskId}`);
+    }
+    
     try {
       const result = await db
         .delete(tasks)
         .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
       
       const success = (result.rowCount || 0) > 0;
-      console.log(`Delete task ${taskId} result: ${success}, rowCount: ${result.rowCount}`);
+      console.log(`Storage: Delete task ${taskId} result: ${success}, rowCount: ${result.rowCount}`);
       return success;
     } catch (error) {
-      console.error(`Error deleting task ${taskId}:`, error);
+      console.error(`Storage: Error deleting task ${taskId}:`, error);
       throw error;
     }
   }
