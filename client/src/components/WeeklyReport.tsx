@@ -13,7 +13,7 @@ export default function WeeklyReport() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: reports = [] } = useQuery({
+  const { data: reports = [], isLoading } = useQuery({
     queryKey: ["/api/weekly-reports"],
   });
 
@@ -25,7 +25,8 @@ export default function WeeklyReport() {
       queryClient.invalidateQueries({ queryKey: ["/api/weekly-reports"] });
       toast({ title: "Weekly report generated successfully!" });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Weekly report generation failed:", error);
       toast({ title: "Failed to generate report", variant: "destructive" });
     },
   });
@@ -48,7 +49,7 @@ export default function WeeklyReport() {
     }
   };
 
-  const latestReport = reports[0];
+  const latestReport = Array.isArray(reports) ? reports[0] : null;
 
   return (
     <Card className="bg-white border border-charcoal-200">
@@ -65,13 +66,21 @@ export default function WeeklyReport() {
             className="bg-teal-600 hover:bg-teal-700"
           >
             <TrendingUp className="w-4 h-4 mr-2" />
-            Generate Report
+            {generateReportMutation.isPending ? "Generating..." : "Generate Report"}
           </Button>
         </div>
       </CardHeader>
 
       <CardContent className="p-6">
-        {!latestReport ? (
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-charcoal-100 rounded"></div>
+              <div className="h-4 bg-charcoal-100 rounded w-3/4"></div>
+              <div className="h-4 bg-charcoal-100 rounded w-1/2"></div>
+            </div>
+          </div>
+        ) : !latestReport ? (
           <div className="text-center py-8">
             <BarChart3 className="w-12 h-12 text-charcoal-400 mx-auto mb-4" />
             <p className="text-charcoal-600 mb-2">No weekly reports yet</p>
