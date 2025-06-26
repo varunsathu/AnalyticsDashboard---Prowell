@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Plus, Settings, LogOut, Zap, Brain, Palette } from "lucide-react";
+import { Plus, Settings, LogOut, Zap, Brain, Palette, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +22,13 @@ interface AppHeaderProps {
 export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode }: AppHeaderProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Check if current user is admin (only your user ID)
+  const isAdmin = user?.id === "42669011";
+
+  const handleAdminDashboard = () => {
+    window.location.href = '/admin';
+  };
 
   const handleLogout = () => {
     // Redirect to home page (root)
@@ -254,6 +261,17 @@ export default function AppHeader({ onQuickCapture, focusMode, onToggleFocusMode
                   <Settings className="mr-2 h-4 w-4" />
                   Preferences
                 </DropdownMenuItem>
+                
+                {/* Admin Dashboard - Only visible to admin user */}
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleAdminDashboard} className="text-purple-600">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  </>
+                )}
                 
                 <DropdownMenuSeparator />
                 
