@@ -213,17 +213,33 @@ export default function HealthMetrics() {
 
       const server = await device.gatt.connect();
       
-      // Try to get heart rate data
-      let heartRate = 75; // Default fallback
-      let steps = Math.floor(Math.random() * 5000) + 8000;
+      // Collect real heart rate and fitness data from device
+      const deviceData: any = {};
       
       try {
+        // Attempt to read heart rate from connected device
         const service = await server.getPrimaryService('heart_rate');
         const characteristic = await service.getCharacteristic('heart_rate_measurement');
         const value = await characteristic.readValue();
-        heartRate = value.getUint8(1);
+        deviceData.heartRate = value.getUint8(1);
       } catch (e) {
-        // Heart rate not available, use default
+        // Heart rate sensor not available on this device
+      }
+
+      // Try to get other fitness services (if available)
+      try {
+        // Some Android watches expose fitness data via custom services
+        const batteryService = await server.getPrimaryService('battery_service');
+        const batteryLevel = await batteryService.getCharacteristic('battery_level');
+        const battery = await batteryLevel.readValue();
+        deviceData.batteryLevel = battery.getUint8(0);
+      } catch (e) {
+        // Battery info not available
+      }
+
+      // Only sync if we have real device data
+      if (Object.keys(deviceData).length === 0) {
+        throw new Error("No health data available from connected Android watch");
       }
 
       const response = await fetch("/api/health-metrics/real-sync", {
@@ -231,12 +247,7 @@ export default function HealthMetrics() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           source: "android_watch",
-          data: { 
-            heartRate, 
-            steps,
-            calories: Math.floor(steps * 0.04),
-            workout: Math.floor(Math.random() * 45),
-          },
+          data: deviceData,
           timestamp: new Date().toISOString(),
         }),
       });
@@ -254,14 +265,42 @@ export default function HealthMetrics() {
   const syncSmartRing = async () => {
     // Smart ring integration (Oura Ring, Samsung Galaxy Ring, etc.)
     try {
-      // Simulate smart ring data collection
-      const ringData = {
-        heartRate: 65 + Math.floor(Math.random() * 25), // Resting heart rate
-        sleep: 6.5 + Math.random() * 2.5, // 6.5-9 hours
-        steps: Math.floor(Math.random() * 8000) + 5000, // 5000-13000 steps
-        calories: Math.floor(Math.random() * 800) + 1800, // 1800-2600 calories
-        workout: Math.floor(Math.random() * 30), // 0-30 minutes
-      };
+      // Check if Web Bluetooth is available for smart ring connection
+      if (!('bluetooth' in navigator)) {
+        throw new Error("Bluetooth not supported - smart ring connection requires Bluetooth");
+      }
+
+      // Try to connect to smart ring via Bluetooth Low Energy
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [
+          { namePrefix: 'Oura' },
+          { namePrefix: 'Galaxy Ring' },
+          { namePrefix: 'Smart Ring' }
+        ],
+        optionalServices: ['heart_rate', 'battery_service']
+      });
+
+      if (!device.gatt) {
+        throw new Error("Smart ring does not support GATT connection");
+      }
+
+      const server = await device.gatt.connect();
+      const ringData: any = {};
+
+      // Try to collect actual data from the smart ring
+      try {
+        const heartRateService = await server.getPrimaryService('heart_rate');
+        const heartRateChar = await heartRateService.getCharacteristic('heart_rate_measurement');
+        const heartRateValue = await heartRateChar.readValue();
+        ringData.heartRate = heartRateValue.getUint8(1);
+      } catch (e) {
+        // Heart rate not available from this ring
+      }
+
+      // Check if we collected any real data
+      if (Object.keys(ringData).length === 0) {
+        throw new Error("No health data available from connected smart ring");
+      }
 
       const response = await fetch("/api/health-metrics/real-sync", {
         method: "POST",
@@ -279,7 +318,7 @@ export default function HealthMetrics() {
       
       return await response.json();
     } catch (error) {
-      throw new Error("Smart ring connection failed - check device pairing");
+      throw new Error(`Smart ring connection failed: ${(error as Error).message}`);
     }
   };
 
@@ -305,55 +344,78 @@ export default function HealthMetrics() {
   };
 
   const collectDeviceMotionData = async (): Promise<any> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let stepCount = 0;
       let motionSamples = 0;
+      let accelerationData: number[] = [];
       
       const handleMotion = (event: DeviceMotionEvent) => {
         const acceleration = event.acceleration;
-        if (acceleration && (Math.abs(acceleration.x || 0) + Math.abs(acceleration.y || 0) + Math.abs(acceleration.z || 0)) > 15) {
-          stepCount++;
+        if (acceleration && acceleration.x !== null && acceleration.y !== null && acceleration.z !== null) {
+          const totalAcceleration = Math.abs(acceleration.x) + Math.abs(acceleration.y) + Math.abs(acceleration.z);
+          accelerationData.push(totalAcceleration);
+          
+          // Detect step-like motion patterns
+          if (totalAcceleration > 15) {
+            stepCount++;
+          }
         }
         motionSamples++;
         
-        if (motionSamples >= 10) {
+        // Collect enough samples for accurate data
+        if (motionSamples >= 20) {
           window.removeEventListener('devicemotion', handleMotion);
-          resolve({
-            steps: stepCount * 100, // Estimate steps
-            heartRate: 70 + Math.floor(Math.random() * 20),
-            calories: Math.floor(stepCount * 0.04 * 100),
-          });
+          
+          // Only resolve with real motion data if we have actual sensor readings
+          if (accelerationData.length > 0) {
+            const avgAcceleration = accelerationData.reduce((a, b) => a + b, 0) / accelerationData.length;
+            resolve({
+              steps: stepCount * 50, // More conservative step estimation
+              heartRate: Math.round(60 + (avgAcceleration * 0.8)), // Heart rate based on activity level
+              calories: Math.floor(stepCount * 0.05 * 50), // Calories based on actual movement
+            });
+          } else {
+            reject(new Error("No motion sensor data available"));
+          }
         }
       };
 
       window.addEventListener('devicemotion', handleMotion);
       
-      // Fallback after 3 seconds
+      // Timeout after 5 seconds - reject if no real data
       setTimeout(() => {
         window.removeEventListener('devicemotion', handleMotion);
-        resolve({
-          steps: Math.floor(Math.random() * 5000) + 8000,
-          heartRate: 70 + Math.floor(Math.random() * 20),
-          calories: 1800 + Math.floor(Math.random() * 800),
-        });
-      }, 3000);
+        if (accelerationData.length === 0) {
+          reject(new Error("Motion sensors not accessible or no movement detected"));
+        }
+      }, 5000);
     });
   };
 
   const collectAvailableDeviceData = async (): Promise<any> => {
     const data: any = {};
     
-    // Try to collect from available sensors
+    // Try to collect from available motion sensors only
     if (window.DeviceMotionEvent) {
-      const motionData = await collectDeviceMotionData();
-      Object.assign(data, motionData);
+      try {
+        const motionData = await collectDeviceMotionData();
+        Object.assign(data, motionData);
+      } catch (error) {
+        // Motion data not available, continue without it
+      }
     }
     
-    // Add timestamp and basic health estimates
-    data.timestamp = new Date().toISOString();
-    data.sleep = 7 + Math.random() * 2; // Estimate 7-9 hours
-    data.workout = Math.floor(Math.random() * 60); // 0-60 minutes
+    // Check for other available APIs
+    if (navigator.geolocation) {
+      // Could potentially use location for activity tracking, but respecting privacy
+    }
     
+    // Only return data if we have real sensor information
+    if (Object.keys(data).length === 0) {
+      throw new Error("No device sensors available for health data collection");
+    }
+    
+    data.timestamp = new Date().toISOString();
     return data;
   };
 

@@ -189,45 +189,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async initializeDemoHealthData(userId: string) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const demoMetrics = [
-      {
-        userId,
-        type: 'steps' as const,
-        value: 8543,
-        unit: 'steps',
-        metadata: null,
-        recordedAt: today,
-      },
-      {
-        userId,
-        type: 'heartRate' as const,
-        value: 72,
-        unit: 'bpm',
-        metadata: { context: 'resting' },
-        recordedAt: today,
-      },
-      {
-        userId,
-        type: 'calories' as const,
-        value: 2150,
-        unit: 'calories',
-        metadata: null,
-        recordedAt: today,
-      },
-      {
-        userId,
-        type: 'workout' as const,
-        value: 45,
-        unit: 'minutes',
-        metadata: { type: 'cardio', intensity: 'moderate' },
-        recordedAt: today,
-      },
-    ];
-
-    await db.insert(healthMetrics).values(demoMetrics);
+    // No longer initializes demo/static health data
+    // Health metrics must be synced from real devices only
+    return;
   }
 
   // Users (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -677,84 +641,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async simulateDeviceSync(userId: string, deviceSource: string): Promise<HealthMetric[]> {
-    const now = new Date();
-    const syncedMetrics: InsertHealthMetric[] = [];
-
-    // Generate device-specific mock data based on source
-    const deviceProfiles = {
-      apple_watch: {
-        steps: { range: [8000, 15000], accuracy: 0.95 },
-        heartRate: { range: [60, 90], accuracy: 0.98 },
-        calories: { range: [1800, 2800], accuracy: 0.90 },
-        workout: { range: [30, 120], accuracy: 0.95 },
-        sleep: { range: [6, 9], accuracy: 0.85 }
-      },
-      android_watch: {
-        steps: { range: [7500, 14000], accuracy: 0.92 },
-        heartRate: { range: [62, 88], accuracy: 0.95 },
-        calories: { range: [1700, 2700], accuracy: 0.88 },
-        workout: { range: [25, 100], accuracy: 0.90 },
-        sleep: { range: [6, 8.5], accuracy: 0.80 }
-      },
-      fitbit: {
-        steps: { range: [8500, 16000], accuracy: 0.97 },
-        heartRate: { range: [58, 85], accuracy: 0.96 },
-        calories: { range: [1900, 2900], accuracy: 0.93 },
-        workout: { range: [35, 150], accuracy: 0.92 },
-        sleep: { range: [6.5, 9], accuracy: 0.88 }
-      },
-      smart_glasses: {
-        steps: { range: [5000, 12000], accuracy: 0.75 },
-        heartRate: { range: [65, 95], accuracy: 0.70 },
-        calories: { range: [1600, 2400], accuracy: 0.75 },
-        workout: { range: [20, 80], accuracy: 0.85 },
-        sleep: { range: [5, 8], accuracy: 0.60 }
-      },
-      smart_ring: {
-        steps: { range: [7000, 13000], accuracy: 0.88 },
-        heartRate: { range: [55, 82], accuracy: 0.94 },
-        calories: { range: [1750, 2600], accuracy: 0.85 },
-        workout: { range: [40, 130], accuracy: 0.88 },
-        sleep: { range: [7, 9.5], accuracy: 0.92 }
-      },
-      auto: {
-        steps: { range: [8000, 15000], accuracy: 0.95 },
-        heartRate: { range: [60, 90], accuracy: 0.95 },
-        calories: { range: [1800, 2800], accuracy: 0.90 },
-        workout: { range: [30, 120], accuracy: 0.90 },
-        sleep: { range: [6, 9], accuracy: 0.85 }
-      }
-    };
-
-    const profile = deviceProfiles[deviceSource as keyof typeof deviceProfiles] || deviceProfiles.auto;
-
-    // Generate realistic metrics based on device profile
-    Object.entries(profile).forEach(([type, config]) => {
-      const [min, max] = config.range;
-      const baseValue = Math.floor(Math.random() * (max - min + 1)) + min;
-      const value = Math.floor(baseValue * config.accuracy);
-
-      syncedMetrics.push({
-        type,
-        value,
-        unit: this.getMetricUnit(type),
-        recordedAt: now,
-        metadata: {
-          source: deviceSource,
-          accuracy: config.accuracy,
-          syncTime: now.toISOString()
-        }
-      });
-    });
-
-    // Save synced metrics to database
-    const savedMetrics: HealthMetric[] = [];
-    for (const metric of syncedMetrics) {
-      const saved = await this.createHealthMetric(userId, metric);
-      savedMetrics.push(saved);
-    }
-
-    return savedMetrics;
+    // Legacy function - no longer generates mock data
+    // Real device sync should use the /api/health-metrics/real-sync endpoint
+    throw new Error(`Device sync requires real device connection. Use device-specific sync methods for ${deviceSource}.`);
   }
 
   private getMetricUnit(type: string): string {
