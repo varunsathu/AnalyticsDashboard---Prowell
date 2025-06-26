@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 import PlainNotepad from "@/components/PlainNotepad";
 import JournalEntry from "@/components/JournalEntry";
-import StatsOverview from "@/components/StatsOverview";
+// import StatsOverview from "@/components/StatsOverview"; // Only used in Analytics section
 import TaskManager from "@/components/TaskManager";
 import ActivityTracker from "@/components/ActivityTracker";
 import SmartNotes from "@/components/SmartNotes";
@@ -131,9 +131,6 @@ export default function Dashboard() {
               ) : (
                 /* Normal Mode Layout */
                 <div className="space-y-8">
-                  {/* Stats Overview moved below notepad */}
-                  <StatsOverview />
-                  
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column */}
                     <div className="space-y-8">
