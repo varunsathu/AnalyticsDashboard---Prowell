@@ -95,154 +95,49 @@ interface AdminStats {
 export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
 
-  const { data: adminStats, isLoading } = useQuery<AdminStats>({
+  const { data: adminStats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats", timeRange],
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time data
+    staleTime: 10000, // Consider data fresh for 10 seconds
   });
 
-  const mockStats: AdminStats = {
-    users: {
-      total: 1247,
-      active: 856,
-      newThisWeek: 34,
-      topUsers: [
-        {
-          id: "user-123",
-          email: "john@example.com",
-          firstName: "John",
-          lastName: "Doe",
-          lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          tasksCompleted: 127,
-          focusMinutes: 2340
-        },
-        {
-          id: "user-456",
-          email: "sarah@example.com",
-          firstName: "Sarah",
-          lastName: "Wilson",
-          lastActive: new Date(Date.now() - 1 * 60 * 60 * 1000),
-          tasksCompleted: 95,
-          focusMinutes: 1890
-        },
-        {
-          id: "user-789",
-          email: "mike@example.com",
-          firstName: "Mike",
-          lastName: "Johnson",
-          lastActive: new Date(Date.now() - 30 * 60 * 1000),
-          tasksCompleted: 78,
-          focusMinutes: 1560
-        }
-      ]
-    },
-    usage: {
-      totalTasks: 15623,
-      completedTasks: 12456,
-      totalNotes: 8934,
-      totalFocusSessions: 4567,
-      totalFocusMinutes: 114175,
-      totalBrowserActivities: 45678,
-      averageSessionLength: 25.4
-    },
-    activity: {
-      dailyActiveUsers: [
-        { date: "2025-06-19", count: 234 },
-        { date: "2025-06-20", count: 267 },
-        { date: "2025-06-21", count: 298 },
-        { date: "2025-06-22", count: 189 },
-        { date: "2025-06-23", count: 156 },
-        { date: "2025-06-24", count: 345 },
-        { date: "2025-06-25", count: 389 }
-      ],
-      featureUsage: [
-        { feature: "Task Management", usage: 89 },
-        { feature: "Focus Timer", usage: 76 },
-        { feature: "Smart Notes", usage: 65 },
-        { feature: "Activity Tracking", usage: 54 },
-        { feature: "Health Metrics", usage: 43 },
-        { feature: "Calendar", usage: 38 }
-      ],
-      peakUsageHours: [
-        { hour: 9, users: 245 },
-        { hour: 10, users: 312 },
-        { hour: 11, users: 289 },
-        { hour: 14, users: 267 },
-        { hour: 15, users: 298 },
-        { hour: 16, users: 234 }
-      ]
-    },
-    health: {
-      apiResponseTime: 125,
-      uptime: 99.8,
-      errorRate: 0.2,
-      databaseSize: 2.4
-    },
-    costs: {
-      monthlyTotal: 2847.50,
-      dailyAverage: 94.92,
-      yearlyProjected: 34170.00,
-      breakdown: {
-        compute: 1245.80,
-        database: 678.90,
-        storage: 234.50,
-        bandwidth: 189.30,
-        monitoring: 156.00,
-        backup: 343.00
-      },
-      resourceUsage: {
-        cpuHours: 2156.4,
-        memoryGBHours: 8925.6,
-        storageGB: 45.8,
-        bandwidthGB: 234.7,
-        databaseConnections: 15640,
-        apiRequests: 234580
-      },
-      topResourceUsers: [
-        {
-          userId: "user-123",
-          email: "john@example.com",
-          resourceUsage: {
-            cpuMinutes: 1140,
-            storageGB: 2.8,
-            apiCalls: 45200,
-            bandwidthGB: 12.3
-          },
-          estimatedCost: 23.45
-        },
-        {
-          userId: "user-456",
-          email: "sarah@example.com",
-          resourceUsage: {
-            cpuMinutes: 732,
-            storageGB: 1.9,
-            apiCalls: 32100,
-            bandwidthGB: 8.7
-          },
-          estimatedCost: 16.80
-        },
-        {
-          userId: "user-789",
-          email: "mike@example.com",
-          resourceUsage: {
-            cpuMinutes: 2148,
-            storageGB: 5.4,
-            apiCalls: 78500,
-            bandwidthGB: 23.1
-          },
-          estimatedCost: 41.20
-        }
-      ],
-      trends: {
-        lastMonth: 2634.20,
-        growth: 8.1,
-        forecast: 3089.40
-      }
-    }
-  };
+  // Remove all mock data - only use real data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-charcoal-50 to-teal-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-charcoal-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-charcoal-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const stats = adminStats || mockStats;
+  if (error || !adminStats) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-charcoal-50 to-teal-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-charcoal-900 mb-4">Unable to Load Admin Data</h2>
+            <p className="text-charcoal-600 mb-6">There was an error loading the admin dashboard data.</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const exportData = async (type: "users" | "usage" | "activity" | "billing") => {
-    // In production, this would trigger a CSV/Excel export
+  // Use only real data from the API - no fallback to mock data
+  const stats = adminStats;
+
+  const exportData = async (type: "users" | "usage" | "activity" | "costs") => {
+    // Export real data from the database
     const data = {
       users: stats.users,
       usage: stats.usage,
@@ -551,7 +446,7 @@ export default function AdminDashboard() {
           <TabsContent value="costs" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-charcoal-900">Infrastructure Costs</h2>
-              <Button variant="outline" size="sm" onClick={() => exportData("costs" as any)}>
+              <Button variant="outline" size="sm" onClick={() => exportData("costs")}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Cost Data
               </Button>
