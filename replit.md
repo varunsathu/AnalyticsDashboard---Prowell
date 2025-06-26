@@ -203,6 +203,7 @@ The application follows a full-stack architecture with clear separation between 
 ✓ **Enhanced Journal with delete functionality and robust date navigation system**
 ✓ **Removed all static/mock health data - health metrics now require authentic device connections only**
 ✓ **Updated health device integration to reject fallback data and ensure real sensor readings**
+✓ **Health metrics temporarily disabled while preserving complete Apple Watch/iOS HealthKit implementation for future activation**
 
 ## User Preferences
 

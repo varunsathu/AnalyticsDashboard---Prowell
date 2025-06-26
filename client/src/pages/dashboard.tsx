@@ -8,7 +8,7 @@ import ActivityTracker from "@/components/ActivityTracker";
 import SmartNotes from "@/components/SmartNotes";
 import CalendarWidget from "@/components/CalendarWidget";
 import FocusTimer from "@/components/FocusTimer";
-import HealthMetrics from "@/components/HealthMetrics";
+// import HealthMetrics from "@/components/HealthMetrics"; // Disabled for now - will be added in future updates
 import WeeklyReport from "@/components/WeeklyReport";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
 import SmartFocusNotification from "@/components/SmartFocusNotification";
@@ -92,17 +92,13 @@ export default function Dashboard() {
               {/* Key Performance Metrics */}
               <StatsOverview />
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column - Browser & Activity Analytics */}
+              <div className="grid grid-cols-1 gap-8">
+                {/* Browser & Activity Analytics */}
                 <div className="space-y-8">
                   <ActivityTracker />
                   <WeeklyReport />
                 </div>
-
-                {/* Right Column - Health Metrics */}
-                <div className="space-y-8">
-                  <HealthMetrics />
-                </div>
+                {/* Health Metrics temporarily disabled - will be added in future updates */}
               </div>
             </div>
           ) : (
