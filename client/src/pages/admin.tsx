@@ -14,7 +14,9 @@ import {
   PieChart,
   Globe,
   Smartphone,
-  Download
+  Download,
+  UserPlus,
+  Calendar
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -272,7 +274,86 @@ export default function AdminDashboard() {
               </Button>
             </div>
             
+            {/* User Growth Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="glass-card border-emerald-200/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-charcoal-600">New This Week</CardTitle>
+                  <UserPlus className="h-4 w-4 text-emerald-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-charcoal-900">
+                    {(stats.users as any).growth?.newThisWeek || 0}
+                  </div>
+                  <p className="text-xs text-charcoal-600">
+                    {(stats.users as any).growth?.weekOverWeekGrowth > 0 ? '+' : ''}
+                    {(stats.users as any).growth?.weekOverWeekGrowth || 0}% vs last week
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-blue-200/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-charcoal-600">New This Month</CardTitle>
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-charcoal-900">
+                    {(stats.users as any).growth?.newThisMonth || 0}
+                  </div>
+                  <p className="text-xs text-charcoal-600">
+                    {(((stats.users as any).growth?.newThisMonth || 0) / (stats.users.total || 1) * 100).toFixed(1)}% of total users
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-teal-200/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-charcoal-600">Growth Rate</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-teal-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-charcoal-900">
+                    {(stats.users as any).growth?.weekOverWeekGrowth > 0 ? '+' : ''}
+                    {(stats.users as any).growth?.weekOverWeekGrowth || 0}%
+                  </div>
+                  <p className="text-xs text-charcoal-600">
+                    Week over week change
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>User Activity Timeline</CardTitle>
+                  <p className="text-sm text-charcoal-600">Daily active users over the last 30 days</p>
+                </CardHeader>
+                <CardContent>
+                  {stats.activity.dailyActiveUsers && stats.activity.dailyActiveUsers.length > 0 ? (
+                    <div className="space-y-2">
+                      {stats.activity.dailyActiveUsers.slice(-7).map((day: any, index: number) => (
+                        <div key={day.date} className="flex items-center justify-between p-2 rounded-lg bg-charcoal-50">
+                          <span className="text-sm text-charcoal-600">{new Date(day.date).toLocaleDateString()}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-charcoal-900">{day.activeUsers} active</span>
+                            {day.newUsers > 0 && (
+                              <Badge variant="outline" className="text-xs">+{day.newUsers} new</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-charcoal-400">
+                      <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Activity tracking data will appear here</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle>Top Active Users</CardTitle>

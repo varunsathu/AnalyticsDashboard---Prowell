@@ -607,6 +607,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[]) {
+    const now = new Date();
+    const dailyData = [];
+
+    // Generate data for the last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Count unique users who were active on this date
+      const activeUserIds = new Set();
+      
+      // Check tasks created/updated on this date
+      tasks.forEach(task => {
+        const taskDate = new Date(task.createdAt || task.updatedAt);
+        if (taskDate && !isNaN(taskDate.getTime()) && taskDate.toISOString().split('T')[0] === dateStr) {
+          activeUserIds.add(task.userId);
+        }
+      });
+      
+      // Check notes created/updated on this date
+      notes.forEach(note => {
+        const noteDate = new Date(note.createdAt || note.updatedAt);
+        if (noteDate && !isNaN(noteDate.getTime()) && noteDate.toISOString().split('T')[0] === dateStr) {
+          activeUserIds.add(note.userId);
+        }
+      });
+      
+      // Check focus sessions on this date
+      focusSessions.forEach(session => {
+        const sessionDate = new Date(session.createdAt);
+        if (sessionDate && !isNaN(sessionDate.getTime()) && sessionDate.toISOString().split('T')[0] === dateStr) {
+          activeUserIds.add(session.userId);
+        }
+      });
+      
+      // Check browser activities on this date
+      browserActivities.forEach(activity => {
+        try {
+          if (!activity.timestamp) return;
+          const activityDate = new Date(activity.timestamp);
+          if (activityDate && !isNaN(activityDate.getTime()) && activityDate.toISOString().split('T')[0] === dateStr) {
+            activeUserIds.add(activity.userId);
+          }
+        } catch (error) {
+          // Skip invalid date values
+        }
+      });
+      
+      dailyData.push({
+        date: dateStr,
+        activeUsers: activeUserIds.size,
+        newUsers: users.filter(user => {
+          if (!user.createdAt) return false;
+          const userDate = new Date(user.createdAt);
+          return userDate && !isNaN(userDate.getTime()) && userDate.toISOString().split('T')[0] === dateStr;
+        }).length
+      });
+    }
+    
+    return dailyData;
+  }
+
+  function getUserGrowthMetrics(users: any[]) {
+    const now = new Date();
+    const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const lastWeek = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const thisMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const newThisWeek = users.filter(user => 
+      user.createdAt && new Date(user.createdAt) > thisWeek
+    ).length;
+    
+    const newLastWeek = users.filter(user => 
+      user.createdAt && 
+      new Date(user.createdAt) > lastWeek && 
+      new Date(user.createdAt) <= thisWeek
+    ).length;
+    
+    const newThisMonth = users.filter(user => 
+      user.createdAt && new Date(user.createdAt) > thisMonth
+    ).length;
+    
+    const weekOverWeekGrowth = newLastWeek > 0 ? 
+      ((newThisWeek - newLastWeek) / newLastWeek * 100) : 
+      (newThisWeek > 0 ? 100 : 0);
+    
+    return {
+      newThisWeek,
+      newThisMonth,
+      weekOverWeekGrowth: Math.round(weekOverWeekGrowth * 10) / 10,
+      totalUsers: users.length
+    };
+  }
+
   // Admin routes
   app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
     try {
@@ -647,11 +742,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sum + (session.completedDuration || 0), 0
       );
 
+      const userGrowthMetrics = getUserGrowthMetrics(allUsers);
+
       const stats = {
         users: {
           total: allUsers.length,
           active: activeUsers.length,
           newThisWeek: newUsersThisWeek.length,
+          growth: userGrowthMetrics,
           topUsers: activeUsers.slice(0, 5).map((user, index) => ({
             id: user.id,
             email: user.email || 'N/A',
@@ -675,7 +773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalFocusMinutes / allFocusSessions.length : 0
         },
         activity: {
-          dailyActiveUsers: [], // Will be calculated from real user activity when implemented
+          dailyActiveUsers: generateDailyActiveUsers(allUsers, allTasks, allNotes, allFocusSessions, allBrowserActivities),
           featureUsage: [
             { feature: "Task Management", usage: Math.round((allTasks.length / Math.max(allUsers.length, 1)) * 10) },
             { feature: "Focus Timer", usage: Math.round((allFocusSessions.length / Math.max(allUsers.length, 1)) * 10) },
