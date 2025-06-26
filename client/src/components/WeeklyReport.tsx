@@ -106,39 +106,46 @@ export default function WeeklyReport() {
               </div>
             </div>
 
-            {/* Browser Activity Summary */}
+            {/* Comprehensive Activity Summary */}
             <div>
-              <h4 className="font-semibold text-charcoal-900 mb-3">Browser Activity Summary</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h4 className="font-semibold text-charcoal-900 mb-3">Weekly Activity Overview</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-2xl font-bold text-blue-600">
-                    {formatTime(latestReport.browserStats.totalTime)}
+                    {formatTime(latestReport.browserStats.totalTime || 0)}
                   </p>
-                  <p className="text-sm text-blue-700">Total Screen Time</p>
+                  <p className="text-sm text-blue-700">Screen Time</p>
+                </div>
+                <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
+                  <p className="text-2xl font-bold text-teal-600">
+                    {formatTime(latestReport.browserStats.focusTime || 0)}
+                  </p>
+                  <p className="text-sm text-teal-700">Focus Time</p>
                 </div>
                 <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-2xl font-bold text-green-600">
-                    {latestReport.browserStats.topSites?.length || 0}
+                    {latestReport.browserStats.tasksCompleted || 0}
                   </p>
-                  <p className="text-sm text-green-700">Unique Sites</p>
+                  <p className="text-sm text-green-700">Tasks Done</p>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-2xl font-bold text-amber-600">
-                    {Object.keys(latestReport.browserStats.categories || {}).length}
+                <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-2xl font-bold text-purple-600">
+                    {latestReport.browserStats.journalDays || 0}
                   </p>
-                  <p className="text-sm text-amber-700">Categories</p>
+                  <p className="text-sm text-purple-700">Journal Days</p>
                 </div>
               </div>
             </div>
 
-            {/* Category Breakdown */}
-            {latestReport.browserStats.categories && (
+            {/* Detailed Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Browser Categories */}
               <div>
-                <h4 className="font-semibold text-charcoal-900 mb-3">Time by Category</h4>
+                <h4 className="font-semibold text-charcoal-900 mb-3">Browser Activity Breakdown</h4>
                 <div className="space-y-2">
-                  {Object.entries(latestReport.browserStats.categories)
+                  {Object.entries(latestReport.browserStats.categories || {})
                     .sort(([,a], [,b]) => (b as number) - (a as number))
-                    .slice(0, 5)
+                    .slice(0, 4)
                     .map(([category, time]) => {
                       const percentage = latestReport.browserStats.totalTime > 0 
                         ? Math.round(((time as number) / latestReport.browserStats.totalTime) * 100)
@@ -148,7 +155,7 @@ export default function WeeklyReport() {
                         <div key={category} className="flex items-center justify-between p-3 bg-charcoal-50 rounded-lg">
                           <div>
                             <p className="font-medium text-charcoal-900 capitalize">{category}</p>
-                            <p className="text-sm text-charcoal-600">{percentage}% of total time</p>
+                            <p className="text-sm text-charcoal-600">{percentage}% of total</p>
                           </div>
                           <p className="font-semibold text-charcoal-900">
                             {formatTime(time as number)}
@@ -158,7 +165,50 @@ export default function WeeklyReport() {
                     })}
                 </div>
               </div>
-            )}
+
+              {/* Performance Metrics */}
+              <div>
+                <h4 className="font-semibold text-charcoal-900 mb-3">Performance Metrics</h4>
+                <div className="space-y-3">
+                  <div className="p-3 bg-charcoal-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-charcoal-600">Task Completion Rate</span>
+                      <span className="font-semibold text-charcoal-900">
+                        {Math.round(latestReport.browserStats.taskCompletionRate || 0)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-charcoal-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-charcoal-600">Focus Sessions</span>
+                      <span className="font-semibold text-charcoal-900">
+                        {latestReport.browserStats.focusSessions || 0} completed
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-charcoal-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-charcoal-600">Notes Created</span>
+                      <span className="font-semibold text-charcoal-900">
+                        {latestReport.browserStats.notesCreated || 0} notes
+                      </span>
+                    </div>
+                  </div>
+                  {latestReport.browserStats.healthMetrics && Object.keys(latestReport.browserStats.healthMetrics).length > 0 && (
+                    <div className="p-3 bg-charcoal-50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-charcoal-600">Avg Daily Steps</span>
+                        <span className="font-semibold text-charcoal-900">
+                          {latestReport.browserStats.healthMetrics.steps?.toLocaleString() || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+
 
             {/* Recommendations */}
             {latestReport.recommendations && latestReport.recommendations.length > 0 && (

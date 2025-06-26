@@ -791,9 +791,30 @@ export class DatabaseStorage implements IStorage {
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
+    // Fetch all data for the week
     const browserActivities = await this.getUserBrowserActivities(userId, weekStart, weekEnd);
-    const tasks = await this.getUserTasks(userId);
+    const allTasks = await this.getUserTasks(userId);
     const focusSessions = await this.getUserFocusSessions(userId, weekStart, weekEnd);
+    const notes = await this.getUserNotes(userId);
+    const journalEntries = await this.getUserJournalEntries(userId, 30);
+    const healthMetrics = await this.getUserHealthMetrics(userId, undefined, weekStart, weekEnd);
+
+    // Filter tasks created/updated during the week
+    const weekTasks = allTasks.filter(task => {
+      const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
+      return taskDate >= weekStart && taskDate <= weekEnd;
+    });
+
+    // Filter notes and journal entries for the week
+    const weekNotes = notes.filter(note => {
+      const noteDate = note.createdAt ? new Date(note.createdAt) : new Date();
+      return noteDate >= weekStart && noteDate <= weekEnd;
+    });
+
+    const weekJournalEntries = journalEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= weekStart && entryDate <= weekEnd;
+    });
 
     // Calculate browser stats
     const categoryTotals = browserActivities.reduce((acc, activity) => {
@@ -808,22 +829,53 @@ export class DatabaseStorage implements IStorage {
       topSites: this.getTopSites(browserActivities),
     };
 
-    // Calculate productivity score
-    const productivityScore = this.calculateProductivityScore(
-      Object.entries(categoryTotals).reduce((acc, [cat, duration]) => {
-        acc[cat] = { duration, count: 0, percentage: 0 };
-        return acc;
-      }, {} as Record<string, any>),
-      totalBrowserTime
-    );
+    // Calculate focus session stats
+    const totalFocusTime = focusSessions.reduce((sum, session) => sum + (session.duration || 0), 0);
+    const completedFocusSessions = focusSessions.filter(session => session.completedDuration > 0).length;
 
-    // Generate recommendations
-    const recommendations = this.generateRecommendations(browserStats, tasks, focusSessions);
+    // Calculate task completion stats
+    const completedTasks = weekTasks.filter(task => task.status === 'completed').length;
+    const taskCompletionRate = weekTasks.length > 0 ? (completedTasks / weekTasks.length) * 100 : 0;
+
+    // Calculate health metrics average
+    const avgHealthMetrics = this.calculateHealthAverages(healthMetrics);
+
+    // Calculate comprehensive productivity score
+    const productivityScore = this.calculateEnhancedProductivityScore({
+      browserStats: categoryTotals,
+      totalBrowserTime,
+      focusTime: totalFocusTime,
+      focusSessions: focusSessions.length,
+      taskCompletionRate,
+      notesCreated: weekNotes.length,
+      journalEntries: weekJournalEntries.length,
+    });
+
+    // Generate comprehensive recommendations
+    const recommendations = this.generateEnhancedRecommendations({
+      browserStats,
+      tasks: weekTasks,
+      focusSessions,
+      notes: weekNotes,
+      journalEntries: weekJournalEntries,
+      healthMetrics: avgHealthMetrics,
+      totalFocusTime,
+      taskCompletionRate,
+    });
 
     const report: InsertWeeklyReport = {
       weekStart,
       weekEnd,
-      browserStats,
+      browserStats: {
+        ...browserStats,
+        focusTime: totalFocusTime,
+        focusSessions: completedFocusSessions,
+        tasksCompleted: completedTasks,
+        taskCompletionRate,
+        notesCreated: weekNotes.length,
+        journalDays: weekJournalEntries.length,
+        healthMetrics: avgHealthMetrics,
+      },
       productivityScore,
       recommendations,
     };
@@ -849,55 +901,186 @@ export class DatabaseStorage implements IStorage {
       }));
   }
 
-  private generateRecommendations(browserStats: any, tasks: Task[], focusSessions: FocusSession[]): any {
+  private calculateHealthAverages(healthMetrics: HealthMetric[]): Record<string, number> {
+    const averages: Record<string, number> = {};
+    const totals: Record<string, { sum: number; count: number }> = {};
+
+    healthMetrics.forEach(metric => {
+      if (!totals[metric.type]) {
+        totals[metric.type] = { sum: 0, count: 0 };
+      }
+      totals[metric.type].sum += metric.value;
+      totals[metric.type].count += 1;
+    });
+
+    Object.entries(totals).forEach(([type, data]) => {
+      averages[type] = Math.round(data.sum / data.count);
+    });
+
+    return averages;
+  }
+
+  private calculateEnhancedProductivityScore(data: {
+    browserStats: Record<string, number>;
+    totalBrowserTime: number;
+    focusTime: number;
+    focusSessions: number;
+    taskCompletionRate: number;
+    notesCreated: number;
+    journalEntries: number;
+  }): number {
+    let score = 0;
+    let maxScore = 0;
+
+    // Browser productivity (40% weight)
+    if (data.totalBrowserTime > 0) {
+      const productivityTime = (data.browserStats.development || 0) + (data.browserStats.productivity || 0) + (data.browserStats.learning || 0);
+      const browserProductivity = Math.min(100, (productivityTime / data.totalBrowserTime) * 100);
+      score += browserProductivity * 0.4;
+    }
+    maxScore += 40;
+
+    // Focus sessions (25% weight)
+    const focusScore = Math.min(100, (data.focusTime / 3600) * 25); // 1 hour = 25 points
+    score += focusScore * 0.25;
+    maxScore += 25;
+
+    // Task completion (20% weight)
+    score += data.taskCompletionRate * 0.2;
+    maxScore += 20;
+
+    // Notes creation (10% weight)
+    const notesScore = Math.min(100, data.notesCreated * 20); // 5 notes = 100 points
+    score += notesScore * 0.1;
+    maxScore += 10;
+
+    // Journal consistency (5% weight)
+    const journalScore = Math.min(100, (data.journalEntries / 7) * 100); // Daily journaling = 100 points
+    score += journalScore * 0.05;
+    maxScore += 5;
+
+    return Math.round((score / maxScore) * 100);
+  }
+
+  private generateEnhancedRecommendations(data: {
+    browserStats: any;
+    tasks: Task[];
+    focusSessions: FocusSession[];
+    notes: Note[];
+    journalEntries: JournalEntry[];
+    healthMetrics: Record<string, number>;
+    totalFocusTime: number;
+    taskCompletionRate: number;
+  }): any {
     const recommendations = [];
 
     // Browser usage recommendations
-    const socialTime = browserStats.categories.social || 0;
-    const entertainmentTime = browserStats.categories.entertainment || 0;
-    const developmentTime = browserStats.categories.development || 0;
+    const socialTime = data.browserStats.categories.social || 0;
+    const entertainmentTime = data.browserStats.categories.entertainment || 0;
+    const developmentTime = data.browserStats.categories.development || 0;
+    const totalTime = data.browserStats.totalTime || 0;
 
-    if (socialTime > 3600) { // More than 1 hour on social
+    if (socialTime > 3600) {
       recommendations.push({
         type: 'time_management',
         priority: 'high',
-        message: 'Consider reducing social media time to boost productivity',
-        suggestion: 'Set specific times for social media check-ins',
+        message: 'High social media usage detected',
+        suggestion: `Reduce ${Math.round(socialTime/3600)}h of social media time. Try setting specific check-in times.`,
       });
     }
 
-    if (entertainmentTime > 7200) { // More than 2 hours entertainment
+    if (entertainmentTime > 7200) {
       recommendations.push({
         type: 'time_management',
         priority: 'medium',
-        message: 'High entertainment usage detected',
-        suggestion: 'Balance entertainment with learning or productive activities',
+        message: 'Entertainment time is above recommended levels',
+        suggestion: 'Balance entertainment with learning activities for better productivity.',
       });
     }
 
-    if (developmentTime > 0 && focusSessions.length < 3) {
+    // Focus session recommendations
+    if (developmentTime > 0 && data.focusSessions.length < 3) {
       recommendations.push({
         type: 'focus',
         priority: 'medium',
         message: 'Use focus sessions during development work',
-        suggestion: 'Try Pomodoro technique for better concentration',
+        suggestion: 'Try Pomodoro technique for 25-minute focused work sessions.',
       });
     }
 
-    // Task completion recommendations
-    const completedTasks = tasks.filter(task => task.status === 'completed').length;
-    const totalTasks = tasks.length;
+    if (data.totalFocusTime < 1800) { // Less than 30 minutes
+      recommendations.push({
+        type: 'focus',
+        priority: 'medium',
+        message: 'Low focus time this week',
+        suggestion: 'Aim for at least 2 hours of focused work daily using the timer.',
+      });
+    }
 
-    if (totalTasks > 0 && completedTasks / totalTasks < 0.7) {
+    // Task management recommendations
+    if (data.taskCompletionRate < 70) {
       recommendations.push({
         type: 'productivity',
         priority: 'high',
-        message: 'Task completion rate could be improved',
-        suggestion: 'Break down large tasks into smaller, manageable ones',
+        message: `Task completion rate is ${Math.round(data.taskCompletionRate)}%`,
+        suggestion: 'Break large tasks into smaller, manageable subtasks.',
+      });
+    }
+
+    // Notes and learning recommendations
+    if (data.notes.length === 0) {
+      recommendations.push({
+        type: 'learning',
+        priority: 'low',
+        message: 'No notes created this week',
+        suggestion: 'Use Smart Notes to capture insights and track your learning progress.',
+      });
+    }
+
+    // Journal consistency recommendations
+    if (data.journalEntries.length < 3) {
+      recommendations.push({
+        type: 'reflection',
+        priority: 'low',
+        message: 'Infrequent journaling detected',
+        suggestion: 'Daily journaling helps track mood, goals, and personal growth.',
+      });
+    }
+
+    // Health metrics recommendations
+    if (data.healthMetrics.steps && data.healthMetrics.steps < 8000) {
+      recommendations.push({
+        type: 'health',
+        priority: 'medium',
+        message: 'Low daily step count',
+        suggestion: 'Aim for 10,000 steps daily. Take walking breaks during work.',
+      });
+    }
+
+    if (data.healthMetrics.sleep && data.healthMetrics.sleep < 7) {
+      recommendations.push({
+        type: 'health',
+        priority: 'high',
+        message: 'Insufficient sleep detected',
+        suggestion: 'Aim for 7-9 hours of sleep for optimal productivity and health.',
       });
     }
 
     return recommendations;
+  }
+
+  private generateRecommendations(browserStats: any, tasks: Task[], focusSessions: FocusSession[]): any {
+    // Legacy method - kept for backward compatibility
+    return this.generateEnhancedRecommendations({
+      browserStats,
+      tasks,
+      focusSessions,
+      notes: [],
+      journalEntries: [],
+      healthMetrics: {},
+      totalFocusTime: 0,
+      taskCompletionRate: 0,
+    });
   }
 
   // Journal Entries
