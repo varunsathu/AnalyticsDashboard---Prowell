@@ -34,6 +34,7 @@ export default function TaskManager() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [taskCreationType, setTaskCreationType] = useState<"detailed" | "sticky">("detailed");
   const [newTaskData, setNewTaskData] = useState({
     title: "",
     description: "",
@@ -41,6 +42,11 @@ export default function TaskManager() {
     priority: "medium",
     dueDate: "",
     estimatedTime: ""
+  });
+  const [stickyTaskData, setStickyTaskData] = useState({
+    title: "",
+    tags: [] as string[],
+    currentTag: ""
   });
   const [newCategoryName, setNewCategoryName] = useState("");
   const queryClient = useQueryClient();
@@ -90,6 +96,11 @@ export default function TaskManager() {
         dueDate: "",
         estimatedTime: ""
       });
+      setStickyTaskData({
+        title: "",
+        tags: [],
+        currentTag: ""
+      });
       toast({
         title: "Task added successfully",
         description: "Your new task has been created.",
@@ -99,6 +110,40 @@ export default function TaskManager() {
       toast({
         title: "Error",
         description: "Failed to add task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addStickyTaskMutation = useMutation({
+    mutationFn: async (stickyData: typeof stickyTaskData) => {
+      const payload = {
+        title: stickyData.title,
+        description: stickyData.tags.length > 0 ? `Tags: ${stickyData.tags.join(', ')}` : "",
+        category: "quick",
+        priority: "medium",
+        status: "pending"
+      };
+      return apiRequest("POST", "/api/tasks", payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      setIsAddTaskOpen(false);
+      setStickyTaskData({
+        title: "",
+        tags: [],
+        currentTag: ""
+      });
+      toast({
+        title: "Sticky note task created",
+        description: "Your quick task has been added.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create sticky note task. Please try again.",
         variant: "destructive",
       });
     },
@@ -213,8 +258,38 @@ export default function TaskManager() {
   });
 
   const handleAddTask = () => {
-    if (!newTaskData.title.trim()) return;
-    addTaskMutation.mutate(newTaskData);
+    if (taskCreationType === "detailed" && !newTaskData.title.trim()) return;
+    if (taskCreationType === "sticky" && !stickyTaskData.title.trim()) return;
+    
+    if (taskCreationType === "detailed") {
+      addTaskMutation.mutate(newTaskData);
+    } else {
+      addStickyTaskMutation.mutate(stickyTaskData);
+    }
+  };
+
+  const addStickyTag = () => {
+    if (stickyTaskData.currentTag.trim() && !stickyTaskData.tags.includes(stickyTaskData.currentTag.trim())) {
+      setStickyTaskData(prev => ({
+        ...prev,
+        tags: [...prev.tags, prev.currentTag.trim()],
+        currentTag: ""
+      }));
+    }
+  };
+
+  const removeStickyTag = (tagToRemove: string) => {
+    setStickyTaskData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const handleStickyTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addStickyTag();
+    }
   };
 
   const handleAddCategory = () => {
@@ -531,44 +606,120 @@ export default function TaskManager() {
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {/* Task Type Selection */}
               <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newTaskData.title}
-                  onChange={(e) => setNewTaskData({...newTaskData, title: e.target.value})}
-                  placeholder="Enter task title"
-                />
+                <Label>Task Type</Label>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant={taskCreationType === "detailed" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setTaskCreationType("detailed")}
+                    className="flex-1"
+                  >
+                    Detailed Task
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={taskCreationType === "sticky" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setTaskCreationType("sticky")}
+                    className="flex-1"
+                  >
+                    Sticky Note
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTaskData.description}
-                  onChange={(e) => setNewTaskData({...newTaskData, description: e.target.value})}
-                  placeholder="Enter task description (optional)"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={newTaskData.category}
-                      onValueChange={(value) => setNewTaskData({...newTaskData, category: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.name.toLowerCase()}>
-                            {category.name}
-                          </SelectItem>
+
+              {taskCreationType === "detailed" ? (
+                /* Detailed Task Form */
+                <>
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={newTaskData.title}
+                      onChange={(e) => setNewTaskData({...newTaskData, title: e.target.value})}
+                      placeholder="Enter task title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newTaskData.description}
+                      onChange={(e) => setNewTaskData({...newTaskData, description: e.target.value})}
+                      placeholder="Enter task description (optional)"
+                      rows={3}
+                    />
+                  </div>
+                </>
+              ) : (
+                /* Sticky Note Form */
+                <>
+                  <div>
+                    <Label htmlFor="stickyTitle">Quick Task</Label>
+                    <Input
+                      id="stickyTitle"
+                      value={stickyTaskData.title}
+                      onChange={(e) => setStickyTaskData({...stickyTaskData, title: e.target.value})}
+                      placeholder="What do you need to do?"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tags">Tags (optional)</Label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        id="tags"
+                        value={stickyTaskData.currentTag}
+                        onChange={(e) => setStickyTaskData({...stickyTaskData, currentTag: e.target.value})}
+                        placeholder="Add a tag and press Enter"
+                        onKeyDown={handleStickyTagKeyDown}
+                      />
+                      <Button type="button" size="sm" onClick={addStickyTag}>
+                        Add
+                      </Button>
+                    </div>
+                    {stickyTaskData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {stickyTaskData.tags.map((tag, index) => (
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => removeStickyTag(tag)}
+                          >
+                            {tag}
+                            <X className="w-3 h-3 ml-1" />
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Category and Priority - Only for Detailed Tasks */}
+              {taskCreationType === "detailed" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={newTaskData.category}
+                        onValueChange={(value) => setNewTaskData({...newTaskData, category: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name.toLowerCase()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -622,35 +773,46 @@ export default function TaskManager() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newTaskData.dueDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setNewTaskData({...newTaskData, dueDate: e.target.value})}
-                  />
                 </div>
-                <div>
-                  <Label htmlFor="estimatedTime">Estimated Time (minutes)</Label>
-                  <Input
-                    id="estimatedTime"
-                    type="number"
-                    value={newTaskData.estimatedTime}
-                    onChange={(e) => setNewTaskData({...newTaskData, estimatedTime: e.target.value})}
-                    placeholder="30"
-                  />
+              )}
+              
+              {/* Date and Time - Only for Detailed Tasks */}
+              {taskCreationType === "detailed" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={newTaskData.dueDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setNewTaskData({...newTaskData, dueDate: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="estimatedTime">Estimated Time (minutes)</Label>
+                    <Input
+                      id="estimatedTime"
+                      type="number"
+                      value={newTaskData.estimatedTime}
+                      onChange={(e) => setNewTaskData({...newTaskData, estimatedTime: e.target.value})}
+                      placeholder="30"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Submit Buttons */}
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => setIsAddTaskOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddTask} disabled={addTaskMutation.isPending}>
-                  {addTaskMutation.isPending ? "Creating..." : "Create Task"}
+                <Button 
+                  onClick={handleAddTask} 
+                  disabled={addTaskMutation.isPending || addStickyTaskMutation.isPending}
+                >
+                  {(addTaskMutation.isPending || addStickyTaskMutation.isPending) ? "Creating..." : 
+                   taskCreationType === "sticky" ? "Create Sticky Note" : "Create Task"}
                 </Button>
               </div>
             </div>

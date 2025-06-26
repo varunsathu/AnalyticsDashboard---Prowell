@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 import PlainNotepad from "@/components/PlainNotepad";
 import JournalEntry from "@/components/JournalEntry";
-// import StatsOverview from "@/components/StatsOverview"; // Only used in Analytics section
+import StatsOverview from "@/components/StatsOverview";
 import TaskManager from "@/components/TaskManager";
 import ActivityTracker from "@/components/ActivityTracker";
 import SmartNotes from "@/components/SmartNotes";
