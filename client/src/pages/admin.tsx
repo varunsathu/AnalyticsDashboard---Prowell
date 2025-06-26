@@ -459,12 +459,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Monthly Costs</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-700">
-                    ${stats.costs.monthlyTotal.toLocaleString()}
-                  </div>
-                  <Badge className={`${stats.costs.trends.growth > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                    {stats.costs.trends.growth > 0 ? '+' : ''}{stats.costs.trends.growth.toFixed(1)}% vs last month
-                  </Badge>
+                  {stats.costs.monthlyTotal > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-orange-700">
+                        ${stats.costs.monthlyTotal.toLocaleString()}
+                      </div>
+                      <Badge className={`${stats.costs.trends.growth > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {stats.costs.trends.growth > 0 ? '+' : ''}{stats.costs.trends.growth.toFixed(1)}% vs last month
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Available
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Cost tracking pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -473,12 +486,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Daily Average</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-700">
-                    ${stats.costs.dailyAverage.toFixed(2)}
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-700">
-                    Per day
-                  </Badge>
+                  {stats.costs.dailyAverage > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-blue-700">
+                        ${stats.costs.dailyAverage.toFixed(2)}
+                      </div>
+                      <Badge className="bg-blue-100 text-blue-700">
+                        Per day
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Available
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Cost tracking pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -487,12 +513,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Yearly Projected</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-700">
-                    ${stats.costs.yearlyProjected.toLocaleString()}
-                  </div>
-                  <Badge className="bg-purple-100 text-purple-700">
-                    Estimate
-                  </Badge>
+                  {stats.costs.yearlyProjected > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-purple-700">
+                        ${stats.costs.yearlyProjected.toLocaleString()}
+                      </div>
+                      <Badge className="bg-purple-100 text-purple-700">
+                        Estimate
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Available
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Cost tracking pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -671,10 +710,11 @@ export default function AdminDashboard() {
                 <CardTitle>Top Resource Consuming Users</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {stats.costs.topResourceUsers
-                    .sort((a, b) => b.estimatedCost - a.estimatedCost)
-                    .map((user, index) => (
+                {stats.costs.topResourceUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {stats.costs.topResourceUsers
+                      .sort((a, b) => b.estimatedCost - a.estimatedCost)
+                      .map((user, index) => (
                     <div key={user.userId} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                       <div>
                         <div className="font-medium text-charcoal-900">{user.email}</div>
@@ -701,12 +741,21 @@ export default function AdminDashboard() {
                           Estimated monthly cost
                         </div>
                         <div className="text-xs text-charcoal-500">
-                          {((user.estimatedCost / stats.costs.monthlyTotal) * 100).toFixed(1)}% of total
+                          {stats.costs.monthlyTotal > 0 ? 
+                            `${((user.estimatedCost / stats.costs.monthlyTotal) * 100).toFixed(1)}% of total` : 
+                            'Cost tracking pending'
+                          }
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-charcoal-400 mb-2">No cost data available</div>
+                    <div className="text-sm text-charcoal-500">Cost tracking will show user resource consumption when implemented</div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

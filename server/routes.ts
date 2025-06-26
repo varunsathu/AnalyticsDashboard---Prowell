@@ -693,56 +693,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           databaseSize: 2.4
         },
         costs: {
-          monthlyTotal: 2847.50,
-          dailyAverage: 94.92,
-          yearlyProjected: 34170.00,
+          monthlyTotal: 0, // Real cost tracking not implemented yet
+          dailyAverage: 0,
+          yearlyProjected: 0,
           breakdown: {
-            compute: 1245.80,
-            database: 678.90,
-            storage: 234.50,
-            bandwidth: 189.30,
-            monitoring: 156.00,
-            backup: 343.00
+            compute: 0, // Will be populated when cost tracking is implemented
+            database: 0,
+            storage: 0,
+            bandwidth: 0,
+            monitoring: 0,
+            backup: 0
           },
           resourceUsage: {
-            cpuHours: allFocusSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) / 60 + (allTasks.length * 0.1),
-            memoryGBHours: (allUsers.length * 2.5 * 24 * 30), // Estimated 2.5GB per user per hour
-            storageGB: parseFloat((allTasks.length * 0.01 + allNotes.length * 0.05 + allBrowserActivities.length * 0.001).toFixed(1)),
-            bandwidthGB: parseFloat(((allTasks.length + allNotes.length + allBrowserActivities.length) * 0.002).toFixed(1)),
-            databaseConnections: allTasks.length + allNotes.length + allFocusSessions.length + allBrowserActivities.length,
-            apiRequests: allTasks.length * 15 + allNotes.length * 10 + allFocusSessions.length * 8 + allBrowserActivities.length * 2
+            cpuHours: 0, // Real resource tracking not implemented
+            memoryGBHours: 0,
+            storageGB: 0,
+            bandwidthGB: 0,
+            databaseConnections: allTasks.length + allNotes.length + allFocusSessions.length + allBrowserActivities.length, // Real DB connection count
+            apiRequests: 0 // Will track real API requests when monitoring is implemented
           },
-          topResourceUsers: allUsers.slice(0, 10).map((user, index) => {
-            // Calculate realistic resource usage based on user activity
-            const userTasks = allTasks.filter(task => task.userId === user.id);
-            const userSessions = allFocusSessions.filter(session => session.userId === user.id);
-            const userBrowserActivities = allBrowserActivities.filter(activity => activity.userId === user.id);
-            const userNotes = allNotes.filter(note => note.userId === user.id);
-            
-            const apiCalls = userTasks.length * 15 + userSessions.length * 8 + userBrowserActivities.length * 2 + userNotes.length * 10;
-            const cpuMinutes = userSessions.reduce((sum, session) => sum + (session.completedDuration || 0), 0) + (userTasks.length * 2);
-            const storageGB = (userTasks.length * 0.01 + userNotes.length * 0.05 + userBrowserActivities.length * 0.001);
-            const bandwidthGB = apiCalls * 0.0002;
-            
-            // Estimate infrastructure cost per user
-            const estimatedCost = (cpuMinutes / 60) * 0.58 + storageGB * 5.12 + bandwidthGB * 0.09 + (apiCalls / 1000) * 0.003;
-            
-            return {
-              userId: user.id,
-              email: user.email || 'N/A',
-              resourceUsage: {
-                cpuMinutes: Math.floor(cpuMinutes),
-                storageGB: parseFloat(storageGB.toFixed(2)),
-                apiCalls: Math.floor(apiCalls),
-                bandwidthGB: parseFloat(bandwidthGB.toFixed(2))
-              },
-              estimatedCost: parseFloat(estimatedCost.toFixed(2))
-            };
-          }),
+          topResourceUsers: [], // Empty until real cost tracking is implemented
           trends: {
-            lastMonth: 2634.20,
-            growth: 8.1,
-            forecast: 3089.40
+            lastMonth: 0, // Will be populated when historical cost data is available
+            growth: 0,
+            forecast: 0
           }
         }
       };
