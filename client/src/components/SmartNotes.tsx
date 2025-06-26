@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { encryptNoteContent, decryptNoteContent } from "@/lib/encryption";
 import type { Note, InsertNote } from "@shared/schema";
 
 export default function SmartNotes() {

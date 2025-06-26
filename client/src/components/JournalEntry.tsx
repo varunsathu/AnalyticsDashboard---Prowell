@@ -10,6 +10,7 @@ import { Calendar, BookOpen, Save, Plus, ChevronLeft, ChevronRight, RotateCcw, F
 import { formatDate } from "@/lib/dateUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { encryptJournalEntry, decryptJournalEntry } from "@/lib/encryption";
 import type { JournalEntry, InsertJournalEntry } from "@shared/schema";
 
 const moodOptions = [
@@ -53,7 +54,9 @@ export default function JournalEntry() {
       if (!response.ok) {
         throw new Error('Failed to fetch journal entry');
       }
-      return response.json();
+      const data = await response.json();
+      // Decrypt sensitive fields before returning
+      return await decryptJournalEntry(data);
     },
     enabled: !!selectedDate,
   });
@@ -61,19 +64,22 @@ export default function JournalEntry() {
   // Create/Update journal entry mutation
   const saveMutation = useMutation({
     mutationFn: async (data: InsertJournalEntry) => {
+      // Encrypt sensitive fields before sending to server
+      const encryptedData = await encryptJournalEntry(data);
+      
       let response;
       if (entry) {
         response = await fetch(`/api/journal/${entry.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(encryptedData),
           credentials: "include",
         });
       } else {
         response = await fetch("/api/journal", {
           method: "POST", 
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(encryptedData),
           credentials: "include",
         });
       }
@@ -81,7 +87,9 @@ export default function JournalEntry() {
       if (!response.ok) {
         throw new Error(`Failed to save journal entry: ${response.statusText}`);
       }
-      return response.json();
+      const result = await response.json();
+      // Decrypt the returned data for local use
+      return await decryptJournalEntry(result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/journal"] });

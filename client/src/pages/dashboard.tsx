@@ -12,6 +12,7 @@ import HealthMetrics from "@/components/HealthMetrics";
 import WeeklyReport from "@/components/WeeklyReport";
 import QuickCaptureModal from "@/components/QuickCaptureModal";
 import SmartFocusNotification from "@/components/SmartFocusNotification";
+import SecuritySettings from "@/components/SecuritySettings";
 import { useFocusMode } from "@/hooks/useFocusMode";
 import { useBrowserTracking } from "@/hooks/useBrowserTracking";
 
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [showSmartFocusNotification, setShowSmartFocusNotification] = useState(false);
   const [smartFocusActivityType, setSmartFocusActivityType] = useState('');
-  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'analytics'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'analytics' | 'security'>('dashboard');
   
   const { focusMode, toggleFocusMode } = useFocusMode();
   const { isTracking, currentActivity } = useBrowserTracking();
