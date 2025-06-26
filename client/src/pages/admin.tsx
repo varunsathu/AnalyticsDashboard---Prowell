@@ -769,12 +769,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm">API Response Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-charcoal-900">
-                    {stats.health.apiResponseTime}ms
-                  </div>
-                  <Badge variant={stats.health.apiResponseTime < 200 ? "default" : "secondary"}>
-                    {stats.health.apiResponseTime < 200 ? "Good" : "Slow"}
-                  </Badge>
+                  {stats.health.apiResponseTime > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-900">
+                        {stats.health.apiResponseTime}ms
+                      </div>
+                      <Badge variant={stats.health.apiResponseTime < 200 ? "default" : "secondary"}>
+                        {stats.health.apiResponseTime < 200 ? "Good" : "Slow"}
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Tracked
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Monitoring pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -783,12 +796,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm">Uptime</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-charcoal-900">
-                    {stats.health.uptime}%
-                  </div>
-                  <Badge variant={stats.health.uptime > 99 ? "default" : "destructive"}>
-                    {stats.health.uptime > 99 ? "Excellent" : "Poor"}
-                  </Badge>
+                  {stats.health.uptime > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-900">
+                        {stats.health.uptime}%
+                      </div>
+                      <Badge variant={stats.health.uptime > 99 ? "default" : "destructive"}>
+                        {stats.health.uptime > 99 ? "Excellent" : "Poor"}
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Tracked
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Monitoring pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -797,12 +823,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm">Error Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-charcoal-900">
-                    {stats.health.errorRate}%
-                  </div>
-                  <Badge variant={stats.health.errorRate < 1 ? "default" : "destructive"}>
-                    {stats.health.errorRate < 1 ? "Low" : "High"}
-                  </Badge>
+                  {stats.health.errorRate > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-900">
+                        {stats.health.errorRate}%
+                      </div>
+                      <Badge variant={stats.health.errorRate < 1 ? "default" : "destructive"}>
+                        {stats.health.errorRate < 1 ? "Low" : "High"}
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Tracked
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Monitoring pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -811,12 +850,25 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm">Database Size</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-charcoal-900">
-                    {stats.health.databaseSize}GB
-                  </div>
-                  <Badge variant="outline">
-                    Growing
-                  </Badge>
+                  {stats.health.databaseSize > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-900">
+                        {stats.health.databaseSize}GB
+                      </div>
+                      <Badge variant="outline">
+                        Growing
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-charcoal-400">
+                        Not Tracked
+                      </div>
+                      <Badge className="bg-charcoal-100 text-charcoal-600">
+                        Monitoring pending
+                      </Badge>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

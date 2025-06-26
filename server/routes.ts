@@ -675,22 +675,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalFocusMinutes / allFocusSessions.length : 0
         },
         activity: {
-          dailyActiveUsers: [], // Simplified for demo
+          dailyActiveUsers: [], // Will be calculated from real user activity when implemented
           featureUsage: [
-            { feature: "Task Management", usage: 89 },
-            { feature: "Focus Timer", usage: 76 },
-            { feature: "Smart Notes", usage: 65 },
-            { feature: "Activity Tracking", usage: 54 },
-            { feature: "Health Metrics", usage: 43 },
-            { feature: "Calendar", usage: 38 }
+            { feature: "Task Management", usage: Math.round((allTasks.length / Math.max(allUsers.length, 1)) * 10) },
+            { feature: "Focus Timer", usage: Math.round((allFocusSessions.length / Math.max(allUsers.length, 1)) * 10) },
+            { feature: "Smart Notes", usage: Math.round((allNotes.length / Math.max(allUsers.length, 1)) * 10) },
+            { feature: "Browser Tracking", usage: Math.round((allBrowserActivities.length / Math.max(allUsers.length, 1)) * 10) },
+            { feature: "Health Metrics", usage: Math.round((allHealthMetrics.length / Math.max(allUsers.length, 1)) * 10) },
+            { feature: "Calendar", usage: 0 } // Calendar events not tracked yet
           ],
-          peakUsageHours: [] // Simplified for demo
+          peakUsageHours: [] // Real-time usage tracking not implemented yet
         },
         health: {
-          apiResponseTime: 125,
-          uptime: 99.8,
-          errorRate: 0.2,
-          databaseSize: 2.4
+          apiResponseTime: 0, // Real API monitoring not implemented yet
+          uptime: 0, // System uptime tracking not implemented
+          errorRate: 0, // Error rate monitoring not implemented
+          databaseSize: 0 // Database size monitoring not implemented
         },
         costs: {
           monthlyTotal: 0, // Real cost tracking not implemented yet
