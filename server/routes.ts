@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(task);
     } catch (error) {
       console.error('Error creating task:', error);
-      res.status(400).json({ message: "Invalid task data", error: error.message });
+      res.status(400).json({ message: "Invalid task data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -159,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (error) {
           console.error(`Failed to delete task ${id}:`, error);
-          errors.push(`Task ${id}: ${error.message}`);
+          errors.push(`Task ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
       
@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, deletedCount, errors: errors.length > 0 ? errors : undefined });
     } catch (error) {
       console.error('Error bulk deleting tasks:', error);
-      res.status(500).json({ message: "Failed to delete tasks", error: error.message });
+      res.status(500).json({ message: "Failed to delete tasks", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(note);
     } catch (error) {
       console.error('Error creating note:', error);
-      res.status(400).json({ message: "Invalid note data", error: error.message });
+      res.status(400).json({ message: "Invalid note data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(note);
     } catch (error) {
       console.error('Error updating note:', error);
-      res.status(500).json({ message: "Failed to update note", error: error.message });
+      res.status(500).json({ message: "Failed to update note", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -315,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(event);
     } catch (error) {
       console.error('Error creating event:', error);
-      res.status(400).json({ message: "Invalid event data", error: error.message });
+      res.status(400).json({ message: "Invalid event data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(session);
     } catch (error) {
       console.error('Error creating focus session:', error);
-      res.status(400).json({ message: "Invalid session data", error: error.message });
+      res.status(400).json({ message: "Invalid session data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -404,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(session);
     } catch (error) {
       console.error('Error updating focus session:', error);
-      res.status(400).json({ message: "Invalid session data", error: error.message });
+      res.status(400).json({ message: "Invalid session data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -431,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(session);
     } catch (error) {
       console.error('Error updating focus session:', error);
-      res.status(400).json({ message: "Invalid session data", error: error.message });
+      res.status(400).json({ message: "Invalid session data", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -859,7 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid category data", errors: error.errors });
       }
       console.error('Error creating category:', error);
-      res.status(500).json({ message: "Failed to create category", error: error.message });
+      res.status(500).json({ message: "Failed to create category", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

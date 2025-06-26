@@ -246,8 +246,11 @@ export default function ActivityTracker() {
     );
   }
 
-  const categories = Object.entries(browserStats.categoryStats || {});
-  const totalTimeFormatted = formatTime(browserStats.totalTime || 0);
+  const typedBrowserStats = browserStats as any;
+  const categoryStats = typedBrowserStats?.categoryStats || {};
+  const totalTime = typedBrowserStats?.totalTime || 0;
+  const categories = Object.entries(categoryStats);
+  const totalTimeFormatted = formatTime(totalTime);
 
   return (
     <Card className="bg-white border border-charcoal-200">

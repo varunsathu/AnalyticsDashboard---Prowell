@@ -241,10 +241,10 @@ export default function HealthMetrics() {
       
       const handleMotion = (event: DeviceMotionEvent) => {
         // Collect acceleration data (user acceleration without gravity)
-        if (event.userAcceleration) {
-          const x = event.userAcceleration.x || 0;
-          const y = event.userAcceleration.y || 0;
-          const z = event.userAcceleration.z || 0;
+        if (event.acceleration) {
+          const x = event.acceleration.x || 0;
+          const y = event.acceleration.y || 0;
+          const z = event.acceleration.z || 0;
           
           accelerationData.x.push(x);
           accelerationData.y.push(y);
