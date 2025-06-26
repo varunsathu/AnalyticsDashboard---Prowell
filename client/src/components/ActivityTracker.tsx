@@ -140,21 +140,28 @@ export default function ActivityTracker() {
       }
     };
 
-    // Save activity before page unload
+    // Save activity before page unload with security validation
     const handleBeforeUnload = () => {
       const duration = Math.floor((Date.now() - startTime) / 1000);
-      if (currentDomain && duration > 0) {
-        // Use sendBeacon for reliable data sending during page unload
-        const data = JSON.stringify({
-          url: `https://${currentDomain}`,
-          title: document.title || currentDomain,
-          domain: currentDomain,
-          duration,
-          startTime: new Date(Date.now() - duration * 1000).toISOString(),
-          endTime: new Date().toISOString(),
-        });
-        
-        navigator.sendBeacon('/api/browser-activities', data);
+      if (currentDomain && duration > 0 && duration < 86400) { // Max 24 hours
+        try {
+          // Security: Sanitize domain and validate data
+          const sanitizedDomain = currentDomain.replace(/[^a-zA-Z0-9.-]/g, '');
+          const sanitizedTitle = (document.title || currentDomain).substring(0, 200);
+          
+          const data = JSON.stringify({
+            url: `https://${sanitizedDomain}`,
+            title: sanitizedTitle,
+            domain: sanitizedDomain,
+            duration: Math.min(duration, 86400), // Cap at 24 hours
+            startTime: new Date(Date.now() - duration * 1000).toISOString(),
+            endTime: new Date().toISOString(),
+          });
+          
+          navigator.sendBeacon('/api/browser-activities', data);
+        } catch (error) {
+          console.warn('Failed to save activity data:', error);
+        }
       }
     };
 

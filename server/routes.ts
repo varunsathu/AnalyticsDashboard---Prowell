@@ -41,13 +41,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to get user ID from request
+  // Helper function to get user ID from request with validation
   const getUserId = (req: any): string => {
     if (req.user?.claims?.sub) {
-      return req.user.claims.sub;
+      const userId = req.user.claims.sub;
+      // Security: Validate user ID format to prevent injection
+      if (typeof userId !== 'string' || !/^[a-zA-Z0-9\-_]+$/.test(userId)) {
+        throw new Error('Invalid user ID format');
+      }
+      return userId;
     }
     // Create demo user if not authenticated (for development)
     return "demo-user-id";
+  };
+
+  // Helper function to validate and sanitize integer parameters
+  const validateIntParam = (param: any, name: string): number => {
+    const num = parseInt(param);
+    if (isNaN(num) || num < 0) {
+      throw new Error(`Invalid ${name} parameter`);
+    }
+    return num;
+  };
+
+  // Helper function to validate date parameters
+  const validateDateParam = (dateStr: string): Date => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date format');
+    }
+    return date;
   };
 
   // Tasks
@@ -78,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/tasks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const taskId = parseInt(req.params.id);
+      const taskId = validateIntParam(req.params.id, 'task ID');
       const taskData = updateTaskSchema.parse({ ...req.body, id: taskId });
       const task = await storage.updateTask(userId, taskData);
       if (!task) {
@@ -93,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/tasks/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const taskId = parseInt(req.params.id);
+      const taskId = validateIntParam(req.params.id, 'task ID');
       const success = await storage.deleteTask(userId, taskId);
       if (!success) {
         return res.status(404).json({ message: "Task not found" });
@@ -199,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/notes/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const noteId = parseInt(req.params.id);
+      const noteId = validateIntParam(req.params.id, 'note ID');
       const updates = req.body;
       console.log('Updating note:', noteId, 'for user:', userId, 'with data:', updates);
       const note = await storage.updateNote(userId, noteId, updates);
@@ -217,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/notes/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const noteId = parseInt(req.params.id);
+      const noteId = validateIntParam(req.params.id, 'note ID');
       const success = await storage.deleteNote(userId, noteId);
       if (!success) {
         return res.status(404).json({ message: "Note not found" });
@@ -322,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/events/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const eventId = parseInt(req.params.id);
+      const eventId = validateIntParam(req.params.id, 'event ID');
       const eventData = insertEventSchema.parse(req.body);
       const event = await storage.updateEvent(userId, eventId, eventData);
       if (!event) {
@@ -337,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/events/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const eventId = parseInt(req.params.id);
+      const eventId = validateIntParam(req.params.id, 'event ID');
       const success = await storage.deleteEvent(userId, eventId);
       if (!success) {
         return res.status(404).json({ message: "Event not found" });
@@ -587,9 +610,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
     try {
-      // In production, add proper admin role checking
-      // const isAdmin = req.user?.role === 'admin';
-      // if (!isAdmin) return res.status(403).json({ message: "Admin access required" });
+      // SECURITY: Restrict admin access to specific user ID
+      const userId = getUserId(req);
+      const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "42669011"; // Set this in environment
+      
+      if (userId !== ADMIN_USER_ID) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
 
       const timeRange = req.query.timeRange || "7d";
       
