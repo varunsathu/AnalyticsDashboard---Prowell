@@ -34,10 +34,11 @@ export default function ActivityTracker() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch browser activity stats
+  // Fetch browser activity stats with real-time updates
   const { data: browserStats, refetch } = useQuery({
     queryKey: ["/api/browser-activities/stats"],
-    refetchInterval: isTracking ? 30000 : false, // Refresh every 30 seconds when tracking
+    refetchInterval: isTracking ? 5000 : false, // Refresh every 5 seconds when tracking
+    staleTime: 0, // Always consider data stale for real-time updates
   });
 
   // Mutation to save browser activity
@@ -60,76 +61,113 @@ export default function ActivityTracker() {
     },
   });
 
-  // Track browser activity
+  // Track browser activity with real-time updates
   useEffect(() => {
     if (!isTracking) return;
 
     let startTime = Date.now();
     let currentDomain = '';
+    let sessionId = `session_${Date.now()}`;
 
-    const trackActivity = () => {
-      const url = window.location.href;
-      const domain = new URL(url).hostname;
-      
-      if (domain !== currentDomain && currentDomain) {
-        // Save previous activity
-        const duration = Math.floor((Date.now() - startTime) / 1000);
-        if (duration > 5) { // Only track if spent more than 5 seconds
-          saveActivityMutation.mutate({
-            url: currentDomain,
-            duration,
-            timestamp: new Date().toISOString(),
-          });
-        }
-        startTime = Date.now();
-      }
-      
-      currentDomain = domain;
-      setCurrentUrl(url);
-    };
-
-    // Track initial page
-    trackActivity();
-
-    // Track page changes
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page became hidden, save current activity
-        const duration = Math.floor((Date.now() - startTime) / 1000);
-        if (duration > 5 && currentDomain) {
-          saveActivityMutation.mutate({
-            url: currentDomain,
-            duration,
-            timestamp: new Date().toISOString(),
-          });
-        }
-      } else {
-        // Page became visible, start new tracking
-        startTime = Date.now();
+    const getCurrentDomain = () => {
+      try {
+        return window.location.hostname || 'replit.app';
+      } catch (e) {
+        return 'replit.app';
       }
     };
 
-    // Track focus/blur events
-    const handleFocus = () => {
-      startTime = Date.now();
-    };
-
-    const handleBlur = () => {
-      const duration = Math.floor((Date.now() - startTime) / 1000);
-      if (duration > 5 && currentDomain) {
+    const saveActivity = (domain: string, duration: number) => {
+      if (duration > 3) { // Track activities longer than 3 seconds
         saveActivityMutation.mutate({
-          url: currentDomain,
+          url: `https://${domain}`,
+          title: document.title || domain,
+          domain: domain,
           duration,
-          timestamp: new Date().toISOString(),
+          startTime: new Date(Date.now() - duration * 1000).toISOString(),
+          endTime: new Date().toISOString(),
         });
       }
     };
 
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('beforeunload', handleBlur);
+    const trackActivity = () => {
+      const newDomain = getCurrentDomain();
+      
+      if (newDomain !== currentDomain) {
+        // Save previous domain activity
+        if (currentDomain) {
+          const duration = Math.floor((Date.now() - startTime) / 1000);
+          saveActivity(currentDomain, duration);
+        }
+        
+        // Start tracking new domain
+        currentDomain = newDomain;
+        startTime = Date.now();
+        sessionId = `session_${Date.now()}`;
+      }
+      
+      setCurrentUrl(`https://${newDomain}`);
+    };
+
+    // Initialize tracking
+    trackActivity();
+
+    // Track visibility changes (tab switch, minimize window)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page hidden - save current session
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        if (currentDomain) {
+          saveActivity(currentDomain, duration);
+        }
+      } else {
+        // Page visible - restart tracking
+        startTime = Date.now();
+        currentDomain = getCurrentDomain();
+      }
+    };
+
+    // Track window focus/blur
+    const handleFocus = () => {
+      startTime = Date.now();
+      currentDomain = getCurrentDomain();
+    };
+
+    const handleBlur = () => {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      if (currentDomain) {
+        saveActivity(currentDomain, duration);
+      }
+    };
+
+    // Save activity before page unload
+    const handleBeforeUnload = () => {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      if (currentDomain && duration > 0) {
+        // Use sendBeacon for reliable data sending during page unload
+        const data = JSON.stringify({
+          url: `https://${currentDomain}`,
+          title: document.title || currentDomain,
+          domain: currentDomain,
+          duration,
+          startTime: new Date(Date.now() - duration * 1000).toISOString(),
+          endTime: new Date().toISOString(),
+        });
+        
+        navigator.sendBeacon('/api/browser-activities', data);
+      }
+    };
+
+    // Periodic save every 30 seconds for long sessions
+    const periodicSave = setInterval(() => {
+      if (!document.hidden && currentDomain) {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        if (duration >= 30) {
+          saveActivity(currentDomain, duration);
+          startTime = Date.now(); // Reset timer
+        }
+      }
+    }, 30000);
 
     // Active time counter
     const activeTimer = setInterval(() => {
@@ -138,21 +176,27 @@ export default function ActivityTracker() {
       }
     }, 1000);
 
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
     return () => {
+      // Cleanup
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('beforeunload', handleBlur);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+      clearInterval(periodicSave);
       clearInterval(activeTimer);
       
-      // Save final activity on unmount
+      // Final save on cleanup
       const duration = Math.floor((Date.now() - startTime) / 1000);
-      if (duration > 5 && currentDomain) {
-        saveActivityMutation.mutate({
-          url: currentDomain,
-          duration,
-          timestamp: new Date().toISOString(),
-        });
+      if (currentDomain && duration > 0) {
+        saveActivity(currentDomain, duration);
       }
     };
   }, [isTracking, saveActivityMutation]);
@@ -253,14 +297,18 @@ export default function ActivityTracker() {
         {/* Current Activity Display */}
         {isTracking && (
           <div className="mb-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
                 <div className="w-3 h-3 bg-teal-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-charcoal-900">Currently tracking</span>
+                <span className="text-sm font-medium text-charcoal-900">Live Activity Tracking</span>
               </div>
               <div className="text-sm text-charcoal-600">
-                Active time today: {formatTime(activeTime)}
+                Session time: {formatTime(activeTime)}
               </div>
+            </div>
+            <div className="flex items-center justify-between text-xs text-charcoal-600">
+              <span>Current domain: {currentUrl ? new URL(currentUrl).hostname : 'replit.app'}</span>
+              <span>Updates every 5 seconds</span>
             </div>
           </div>
         )}
