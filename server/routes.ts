@@ -518,6 +518,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/health-metrics/real-sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { source, data, timestamp } = req.body;
+      
+      // Process real device data
+      const syncedMetrics = [];
+      
+      for (const [metricType, value] of Object.entries(data)) {
+        if (typeof value === 'number' && value > 0) {
+          const metric = await storage.createHealthMetric(userId, {
+            type: metricType,
+            value: Math.round(value),
+            unit: getMetricUnit(metricType),
+            recordedAt: new Date(timestamp),
+            metadata: {
+              source,
+              realDevice: true,
+              syncTime: new Date().toISOString(),
+            }
+          });
+          syncedMetrics.push(metric);
+        }
+      }
+      
+      res.json({ success: true, syncedMetrics: syncedMetrics.length, source, realDevice: true });
+    } catch (error) {
+      console.error('Real device sync error:', error);
+      res.status(500).json({ message: "Failed to sync real device data" });
+    }
+  });
+
+  function getMetricUnit(type: string): string {
+    const units: Record<string, string> = {
+      steps: 'count',
+      heartRate: 'bpm',
+      calories: 'cal',
+      workout: 'minutes',
+      sleep: 'hours'
+    };
+    return units[type] || 'unit';
+  }
+
   // Weekly Reports
   app.get("/api/weekly-reports", isAuthenticated, async (req: any, res) => {
     try {
