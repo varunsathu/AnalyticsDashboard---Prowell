@@ -11,7 +11,7 @@ import PrivateAccess from "@/components/PrivateAccess";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,16 +21,11 @@ function Router() {
     );
   }
 
-  // Check if user is authorized for private app access
-  const authorizedEmails = ['varunsatthu@gmail.com'];
-  const userEmail = (user as any)?.email;
-  const isAuthorized = isAuthenticated && userEmail && authorizedEmails.includes(userEmail);
-
   return (
     <Switch>
-      <Route path="/" component={isAuthorized ? Dashboard : PrivateAccess} />
-      <Route path="/dashboard" component={isAuthorized ? Dashboard : PrivateAccess} />
-      <Route path="/admin" component={isAuthorized ? AdminDashboard : PrivateAccess} />
+      <Route path="/" component={isAuthenticated ? Dashboard : PrivateAccess} />
+      <Route path="/dashboard" component={isAuthenticated ? Dashboard : PrivateAccess} />
+      <Route path="/admin" component={isAuthenticated ? AdminDashboard : PrivateAccess} />
       <Route component={NotFound} />
     </Switch>
   );

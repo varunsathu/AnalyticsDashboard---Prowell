@@ -144,15 +144,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized - Private App Access Required" });
   }
 
-  // Check if user is in authorized whitelist
+  // Get user email for logging
   const userEmail = user.claims?.email;
-  if (!userEmail || !AUTHORIZED_USERS.includes(userEmail)) {
-    console.log(`🔒 Unauthorized access attempt by: ${userEmail || 'unknown'}`);
-    return res.status(403).json({ 
-      message: "Access Denied - This is a private application", 
-      error: "Unauthorized user" 
-    });
-  }
+  console.log(`✅ User authenticated: ${userEmail || 'unknown'}`);
 
   const now = Math.floor(Date.now() / 1000);
   console.log('Token check - now:', now, 'expires_at:', user.expires_at);
