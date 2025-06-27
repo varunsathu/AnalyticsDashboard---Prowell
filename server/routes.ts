@@ -607,8 +607,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[]) {
-    const dailyData = [];
+function calculateFeatureUsage(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[], healthMetrics: any[]) {
+  const totalUsers = Math.max(users.length, 1);
+  
+  // Calculate actual user adoption rates as percentages
+  const usersWithTasks = new Set(tasks.map(task => task.userId)).size;
+  const usersWithNotes = new Set(notes.map(note => note.userId)).size;
+  const usersWithFocusSessions = new Set(focusSessions.map(session => session.userId)).size;
+  const usersWithBrowserActivities = new Set(browserActivities.map(activity => activity.userId)).size;
+  const usersWithHealthMetrics = new Set(healthMetrics.map(metric => metric.userId)).size;
+  
+  return [
+    { 
+      feature: "Task Management", 
+      usage: Math.round((usersWithTasks / totalUsers) * 100)
+    },
+    { 
+      feature: "Focus Timer", 
+      usage: Math.round((usersWithFocusSessions / totalUsers) * 100)
+    },
+    { 
+      feature: "Smart Notes", 
+      usage: Math.round((usersWithNotes / totalUsers) * 100)
+    },
+    { 
+      feature: "Browser Tracking", 
+      usage: Math.round((usersWithBrowserActivities / totalUsers) * 100)
+    },
+    { 
+      feature: "Health Metrics", 
+      usage: Math.round((usersWithHealthMetrics / totalUsers) * 100)
+    },
+    { 
+      feature: "Calendar", 
+      usage: 0 // No calendar events table exists yet
+    }
+  ].filter(item => item.usage > 0 || item.feature === "Calendar"); // Only show features with actual usage
+}
+
+function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[]): Array<{date: string, activeUsers: number, newUsers: number}> {
+    const dailyData: Array<{date: string, activeUsers: number, newUsers: number}> = [];
     const activityByDate = new Map();
 
     // Collect all actual activity dates from real data
@@ -783,14 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         activity: {
           dailyActiveUsers: generateDailyActiveUsers(allUsers, allTasks, allNotes, allFocusSessions, allBrowserActivities),
-          featureUsage: [
-            { feature: "Task Management", usage: Math.round((allTasks.length / Math.max(allUsers.length, 1)) * 10) },
-            { feature: "Focus Timer", usage: Math.round((allFocusSessions.length / Math.max(allUsers.length, 1)) * 10) },
-            { feature: "Smart Notes", usage: Math.round((allNotes.length / Math.max(allUsers.length, 1)) * 10) },
-            { feature: "Browser Tracking", usage: Math.round((allBrowserActivities.length / Math.max(allUsers.length, 1)) * 10) },
-            { feature: "Health Metrics", usage: Math.round((allHealthMetrics.length / Math.max(allUsers.length, 1)) * 10) },
-            { feature: "Calendar", usage: 0 } // Calendar events not tracked yet
-          ],
+          featureUsage: calculateFeatureUsage(allUsers, allTasks, allNotes, allFocusSessions, allBrowserActivities, allHealthMetrics),
           peakUsageHours: [] // Real-time usage tracking not implemented yet
         },
         health: {
