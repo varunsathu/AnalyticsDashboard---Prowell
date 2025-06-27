@@ -663,7 +663,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.compute.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.compute / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.compute / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
@@ -678,7 +681,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.database.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.database / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.database / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
@@ -693,7 +699,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.storage.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.storage / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.storage / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
@@ -708,7 +717,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.bandwidth.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.bandwidth / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.bandwidth / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
@@ -723,7 +735,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.monitoring.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.monitoring / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.monitoring / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
@@ -738,7 +753,10 @@ export default function AdminDashboard() {
                           ${stats.costs.breakdown.backup.toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {((stats.costs.breakdown.backup / stats.costs.monthlyTotal) * 100).toFixed(1)}%
+                          {stats.costs.monthlyTotal > 0 ? 
+                            ((stats.costs.breakdown.backup / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            '0%'
+                          }
                         </div>
                       </div>
                     </div>
