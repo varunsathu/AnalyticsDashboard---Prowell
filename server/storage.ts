@@ -36,7 +36,7 @@ import {
   type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, like, sql } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, like, ilike, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -257,16 +257,17 @@ export class DatabaseStorage implements IStorage {
   async searchNotes(userId: string, query: string): Promise<Note[]> {
     console.log('Storage searchNotes - userId:', userId, 'query:', query);
     
+    const searchPattern = `%${query}%`;
     const result = await db
       .select()
       .from(notes)
       .where(
         and(
           eq(notes.userId, userId),
-          sql`(
-            ${notes.title} ILIKE ${`%${query}%`} OR 
-            ${notes.content} ILIKE ${`%${query}%`}
-          )`
+          or(
+            ilike(notes.title, searchPattern),
+            ilike(notes.content, searchPattern)
+          )
         )
       )
       .orderBy(desc(notes.createdAt));
