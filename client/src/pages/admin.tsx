@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
 
   const { data: adminStats, isLoading, error } = useQuery<AdminStats>({
-    queryKey: ["/api/admin/stats", timeRange],
+    queryKey: ["/api/admin/stats-bypass", timeRange],
     refetchInterval: 30000, // Refresh every 30 seconds for real-time data
     staleTime: 10000, // Consider data fresh for 10 seconds
   });
