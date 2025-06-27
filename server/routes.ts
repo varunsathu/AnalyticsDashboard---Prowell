@@ -24,6 +24,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { sanitizeObject, sanitizeText, sanitizeHtml } from "./security/sanitization";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -891,9 +892,9 @@ function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focu
     try {
       // SECURITY: Restrict admin access to specific user ID
       const userId = getUserId(req);
-      const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "42669011"; // Set this in environment
+      const ADMIN_USER_ID = process.env.ADMIN_USER_ID; // Must be set in environment for security
       
-      if (userId !== ADMIN_USER_ID) {
+      if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) {
         return res.status(403).json({ message: "Admin access required" });
       }
 

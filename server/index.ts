@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { securityLogger } from "./middleware/validation";
 
 const app = express();
 
@@ -25,25 +26,42 @@ app.use('/api/', limiter);
 app.use('/api/login', authLimiter);
 app.use('/api/logout', authLimiter);
 
+// Security logging middleware
+app.use(securityLogger);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Security: Basic CSRF protection headers
+// Enhanced Security Headers and CSRF Protection
 app.use((req, res, next) => {
-  // Set security headers
+  // Comprehensive security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';");
   
-  // CSRF protection for state-changing operations
+  // Enhanced CSRF protection for state-changing operations
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     const origin = req.get('Origin');
     const referer = req.get('Referer');
     const host = req.get('Host');
     
-    if (origin && !origin.includes(host || '')) {
-      return res.status(403).json({ message: 'Cross-origin request blocked' });
+    // Check for valid origin or referer
+    if (origin) {
+      const originHost = new URL(origin).host;
+      if (originHost !== host) {
+        return res.status(403).json({ message: 'Cross-origin request blocked' });
+      }
+    } else if (referer) {
+      const refererHost = new URL(referer).host;
+      if (refererHost !== host) {
+        return res.status(403).json({ message: 'Cross-origin request blocked' });
+      }
+    } else {
+      // No origin or referer - potential CSRF attempt
+      return res.status(403).json({ message: 'Missing origin/referer header' });
     }
   }
   

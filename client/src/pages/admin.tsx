@@ -223,7 +223,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="text-2xl font-bold text-charcoal-900">{stats.users.active.toLocaleString()}</div>
               <p className="text-xs text-charcoal-600">
-                {((stats.users.active / stats.users.total) * 100).toFixed(1)}% engagement rate
+                {stats.users.total > 0 ? ((stats.users.active / stats.users.total) * 100).toFixed(1) : '0.0'}% engagement rate
               </p>
             </CardContent>
           </Card>
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="text-2xl font-bold text-charcoal-900">{stats.usage.totalTasks.toLocaleString()}</div>
               <p className="text-xs text-charcoal-600">
-                {((stats.usage.completedTasks / stats.usage.totalTasks) * 100).toFixed(1)}% completed
+                {stats.usage.totalTasks > 0 ? ((stats.usage.completedTasks / stats.usage.totalTasks) * 100).toFixed(1) : '0.0'}% completed
               </p>
             </CardContent>
           </Card>
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
                     {(stats.users as any).growth?.newThisMonth || 0}
                   </div>
                   <p className="text-xs text-charcoal-600">
-                    {(((stats.users as any).growth?.newThisMonth || 0) / (stats.users.total || 1) * 100).toFixed(1)}% of total users
+                    {stats.users.total > 0 ? (((stats.users as any).growth?.newThisMonth || 0) / stats.users.total * 100).toFixed(1) : '0.0'}% of total users
                   </p>
                 </CardContent>
               </Card>
@@ -664,7 +664,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.compute || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.compute || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -682,7 +682,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.database || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.database || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -700,7 +700,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.storage || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.storage || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -718,7 +718,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.bandwidth || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.bandwidth || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -736,7 +736,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.monitoring || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.monitoring || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -754,7 +754,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.backup || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.backup || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -855,7 +855,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="text-xs text-charcoal-500">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            `${(((user.estimatedCost || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1)}% of total` : 
+                            `${(((user.estimatedCost || 0) / stats.costs.monthlyTotal) * 100).toFixed(1)}% of total` : 
                             'Cost tracking pending'
                           }
                         </div>
