@@ -7,10 +7,11 @@ import Dashboard from "@/pages/dashboard";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 import AdminDashboard from "@/pages/admin";
+import PrivateAccess from "@/components/PrivateAccess";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -20,11 +21,16 @@ function Router() {
     );
   }
 
+  // Check if user is authorized for private app access
+  const authorizedEmails = ['varunsatthu@gmail.com'];
+  const userEmail = (user as any)?.email;
+  const isAuthorized = isAuthenticated && userEmail && authorizedEmails.includes(userEmail);
+
   return (
     <Switch>
-      <Route path="/" component={isAuthenticated ? Dashboard : Landing} />
-      <Route path="/dashboard" component={isAuthenticated ? Dashboard : Landing} />
-      <Route path="/admin" component={isAuthenticated ? AdminDashboard : Landing} />
+      <Route path="/" component={isAuthorized ? Dashboard : PrivateAccess} />
+      <Route path="/dashboard" component={isAuthorized ? Dashboard : PrivateAccess} />
+      <Route path="/admin" component={isAuthorized ? AdminDashboard : PrivateAccess} />
       <Route component={NotFound} />
     </Switch>
   );

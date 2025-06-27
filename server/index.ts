@@ -32,6 +32,43 @@ app.use(securityLogger);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
+// Private App Access Control - Block unauthorized access to source code
+app.use((req, res, next) => {
+  // Only block direct access to sensitive source files, not Vite dev assets
+  const blockedPaths = [
+    '/server/', '/client/', '/shared/', '/.git/', '/node_modules/',
+    '/.env', '/.replit', '/package.json', '/package-lock.json', '/drizzle.config.ts',
+    '/tsconfig.json', '/vite.config.ts', '/tailwind.config.ts', '/postcss.config.js'
+  ];
+  
+  const requestPath = req.path.toLowerCase();
+  
+  // Allow Vite development assets and API calls
+  if (req.path.startsWith('/api/') || 
+      req.path.startsWith('/@') || 
+      req.path.startsWith('/src/') ||
+      req.path.includes('vite') ||
+      req.path.includes('.css') ||
+      req.path.includes('.js') ||
+      req.path.includes('.mjs')) {
+    return next();
+  }
+  
+  const isBlockedPath = blockedPaths.some(blocked => 
+    requestPath.startsWith(blocked)
+  );
+  
+  if (isBlockedPath) {
+    log(`🔒 Blocked unauthorized access attempt to: ${req.path} from IP: ${req.ip}`, 'security');
+    return res.status(403).json({ 
+      error: 'Access Denied', 
+      message: 'This application is private. Unauthorized access to source code is prohibited.' 
+    });
+  }
+  
+  next();
+});
+
 // Enhanced Security Headers and CSRF Protection
 app.use((req, res, next) => {
   // Comprehensive security headers
@@ -41,6 +78,9 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';");
+  
+  // Private app indicator
+  res.setHeader('X-App-Access', 'private');
   
   // Enhanced CSRF protection for state-changing operations
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {

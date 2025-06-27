@@ -128,6 +128,12 @@ export async function setupAuth(app: Express) {
   });
 }
 
+// Authorized users whitelist for private app access
+const AUTHORIZED_USERS = [
+  'varunsatthu@gmail.com', // App owner
+  // Add more authorized emails here as needed
+];
+
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
@@ -135,7 +141,17 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   if (!req.isAuthenticated() || !user?.expires_at) {
     console.log('Authentication failed - not authenticated or no expires_at');
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized - Private App Access Required" });
+  }
+
+  // Check if user is in authorized whitelist
+  const userEmail = user.claims?.email;
+  if (!userEmail || !AUTHORIZED_USERS.includes(userEmail)) {
+    console.log(`🔒 Unauthorized access attempt by: ${userEmail || 'unknown'}`);
+    return res.status(403).json({ 
+      message: "Access Denied - This is a private application", 
+      error: "Unauthorized user" 
+    });
   }
 
   const now = Math.floor(Date.now() / 1000);
