@@ -107,92 +107,12 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   constructor() {
-    // Initialize database with demo data if needed (async operation)
-    this.initializeDemoData().catch(err => {
-      console.log('Demo data initialization failed:', err.message);
-    });
+    // No demo data initialization - only real user data
   }
 
-  private async initializeDemoData() {
-    try {
-      // Check if demo user already exists
-      const existingUser = await db.select().from(users).where(eq(users.id, 'demo-user-id')).limit(1);
-      
-      if (existingUser.length === 0) {
-        // Create demo user for testing
-        const demoUser = await this.upsertUser({
-          id: 'demo-user-id',
-          email: 'demo@example.com',
-          firstName: 'Demo',
-          lastName: 'User',
-          profileImageUrl: null,
-        });
+  // Removed static demo browser data - all activity tracking now uses authentic user data only
 
-        // Add demo browser activities and health data
-        await this.initializeDemoBrowserData(demoUser.id);
-        await this.initializeDemoHealthData(demoUser.id);
-        await this.initializeDefaultCategories(demoUser.id);
-      }
-    } catch (error) {
-      console.log('Demo data initialization skipped (tables may not exist yet)');
-    }
-  }
-
-  private async initializeDemoBrowserData(userId: string) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const demoActivities = [
-      {
-        userId,
-        url: 'https://github.com/vercel/next.js',
-        domain: 'github.com',
-        title: 'GitHub - vercel/next.js: The React Framework',
-        category: 'development' as const,
-        duration: 2340, // 39 minutes
-        startTime: new Date(today.getTime() + 9 * 60 * 60 * 1000),
-        endTime: new Date(today.getTime() + 9 * 60 * 60 * 1000 + 2340 * 1000),
-      },
-      {
-        userId,
-        url: 'https://stackoverflow.com/questions/react-hooks',
-        domain: 'stackoverflow.com',
-        title: 'React Hooks - Stack Overflow',
-        category: 'development' as const,
-        duration: 1800, // 30 minutes
-        startTime: new Date(today.getTime() + 10 * 60 * 60 * 1000),
-        endTime: new Date(today.getTime() + 10 * 60 * 60 * 1000 + 1800 * 1000),
-      },
-      {
-        userId,
-        url: 'https://www.youtube.com/watch?v=programming-tutorial',
-        domain: 'youtube.com',
-        title: 'Advanced React Patterns - YouTube',
-        category: 'learning' as const,
-        duration: 3600, // 1 hour
-        startTime: new Date(today.getTime() + 14 * 60 * 60 * 1000),
-        endTime: new Date(today.getTime() + 15 * 60 * 60 * 1000),
-      },
-      {
-        userId,
-        url: 'https://twitter.com/home',
-        domain: 'twitter.com',
-        title: 'Twitter / X',
-        category: 'social' as const,
-        duration: 900, // 15 minutes
-        startTime: new Date(today.getTime() + 16 * 60 * 60 * 1000),
-        endTime: new Date(today.getTime() + 16 * 60 * 60 * 1000 + 900 * 1000),
-      },
-    ];
-
-    await db.insert(browserActivities).values(demoActivities);
-  }
-
-  private async initializeDemoHealthData(userId: string) {
-    // No longer initializes demo/static health data
-    // Health metrics must be synced from real devices only
-    return;
-  }
+  // Removed static demo health data - all health metrics now use authentic device data only
 
   // Users (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
