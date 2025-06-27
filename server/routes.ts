@@ -944,7 +944,7 @@ function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focu
       costs: {
         monthlyTotal: 0,
         dailyAverage: 0,
-        yearlyProjection: 0,
+        yearlyProjected: 0,
         breakdown: {
           database: 0,
           hosting: 0,
