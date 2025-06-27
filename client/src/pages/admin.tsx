@@ -510,22 +510,30 @@ export default function AdminDashboard() {
                 <CardTitle>Peak Usage Hours</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-6 gap-4">
-                  {stats.activity.peakUsageHours.map((hour) => (
-                    <div key={hour.hour} className="text-center">
-                      <div className="h-20 bg-charcoal-100 rounded-lg flex items-end justify-center mb-2">
-                        <div 
-                          className="bg-teal-500 rounded-t-lg w-full transition-all duration-300"
-                          style={{ 
-                            height: `${(hour.users / Math.max(...stats.activity.peakUsageHours.map(h => h.users))) * 100}%` 
-                          }}
-                        />
+                {stats.activity.peakUsageHours && stats.activity.peakUsageHours.length > 0 ? (
+                  <div className="grid grid-cols-6 gap-4">
+                    {stats.activity.peakUsageHours.map((hour) => (
+                      <div key={hour.hour} className="text-center">
+                        <div className="h-20 bg-charcoal-100 rounded-lg flex items-end justify-center mb-2">
+                          <div 
+                            className="bg-teal-500 rounded-t-lg w-full transition-all duration-300"
+                            style={{ 
+                              height: `${(hour.users / Math.max(...stats.activity.peakUsageHours.map(h => h.users))) * 100}%` 
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs text-charcoal-600">{hour.hour}:00</div>
+                        <div className="text-sm font-medium text-charcoal-900">{hour.users}</div>
                       </div>
-                      <div className="text-xs text-charcoal-600">{hour.hour}:00</div>
-                      <div className="text-sm font-medium text-charcoal-900">{hour.users}</div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-charcoal-400">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No usage patterns available</p>
+                    <p className="text-xs mt-1">Peak hours will appear when users are active</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

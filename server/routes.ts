@@ -607,6 +607,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+function calculatePeakUsageHours(tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[]) {
+  const hourlyActivity = new Map<number, number>();
+  
+  // Initialize all hours (0-23) with 0 activity
+  for (let hour = 0; hour < 24; hour++) {
+    hourlyActivity.set(hour, 0);
+  }
+  
+  // Count activity by hour from all real user actions
+  const countActivityByHour = (timestamp: string | Date) => {
+    if (!timestamp) return;
+    try {
+      const date = new Date(timestamp);
+      if (date && !isNaN(date.getTime())) {
+        const hour = date.getHours();
+        hourlyActivity.set(hour, (hourlyActivity.get(hour) || 0) + 1);
+      }
+    } catch (error) {
+      // Skip invalid timestamps
+    }
+  };
+  
+  // Count task activity
+  tasks.forEach(task => {
+    countActivityByHour(task.createdAt);
+    countActivityByHour(task.updatedAt);
+  });
+  
+  // Count note activity
+  notes.forEach(note => {
+    countActivityByHour(note.createdAt);
+    countActivityByHour(note.updatedAt);
+  });
+  
+  // Count focus session activity
+  focusSessions.forEach(session => {
+    countActivityByHour(session.createdAt);
+    countActivityByHour(session.startTime);
+  });
+  
+  // Count browser activity
+  browserActivities.forEach(activity => {
+    countActivityByHour(activity.timestamp || activity.startTime);
+  });
+  
+  // Convert to array and sort by activity count (descending)
+  const peakHours = Array.from(hourlyActivity.entries())
+    .map(([hour, users]) => ({ hour, users }))
+    .filter(item => item.users > 0) // Only show hours with actual activity
+    .sort((a, b) => b.users - a.users)
+    .slice(0, 6); // Top 6 peak hours
+  
+  return peakHours;
+}
+
 function calculateFeatureUsage(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[], healthMetrics: any[]) {
   const totalUsers = Math.max(users.length, 1);
   
@@ -822,7 +877,7 @@ function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focu
         activity: {
           dailyActiveUsers: generateDailyActiveUsers(allUsers, allTasks, allNotes, allFocusSessions, allBrowserActivities),
           featureUsage: calculateFeatureUsage(allUsers, allTasks, allNotes, allFocusSessions, allBrowserActivities, allHealthMetrics),
-          peakUsageHours: [] // Real-time usage tracking not implemented yet
+          peakUsageHours: calculatePeakUsageHours(allTasks, allNotes, allFocusSessions, allBrowserActivities)
         },
         health: {
           apiResponseTime: 0, // Real API monitoring not implemented yet
