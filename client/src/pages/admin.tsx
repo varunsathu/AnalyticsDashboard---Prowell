@@ -103,6 +103,8 @@ export default function AdminDashboard() {
     staleTime: 10000, // Consider data fresh for 10 seconds
   });
 
+  console.log('Admin component state:', { adminStats, isLoading, error });
+
   // Remove all mock data - only use real data
   if (isLoading) {
     return (
