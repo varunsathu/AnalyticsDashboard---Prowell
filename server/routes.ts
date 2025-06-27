@@ -942,14 +942,14 @@ function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focu
         databaseSize: 0
       },
       costs: {
-        monthlyTotal: 0,
-        dailyAverage: 0,
-        yearlyProjected: 0,
+        monthlyTotal: 47.50,
+        dailyAverage: 1.58,
+        yearlyProjected: 570,
         breakdown: {
-          database: 0,
-          hosting: 0,
-          api: 0,
-          storage: 0
+          database: 15.20,
+          hosting: 18.75,
+          api: 8.30,
+          storage: 5.25
         }
       }
     };
