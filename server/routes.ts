@@ -608,66 +608,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focusSessions: any[], browserActivities: any[]) {
-    const now = new Date();
     const dailyData = [];
+    const activityByDate = new Map();
 
-    // Generate data for the last 30 days
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Count unique users who were active on this date
-      const activeUserIds = new Set();
-      
-      // Check tasks created/updated on this date
-      tasks.forEach(task => {
-        const taskDate = new Date(task.createdAt || task.updatedAt);
-        if (taskDate && !isNaN(taskDate.getTime()) && taskDate.toISOString().split('T')[0] === dateStr) {
-          activeUserIds.add(task.userId);
+    // Collect all actual activity dates from real data
+    const collectActivityDate = (date: any, userId: string) => {
+      if (!date) return;
+      try {
+        const activityDate = new Date(date);
+        if (activityDate && !isNaN(activityDate.getTime())) {
+          const dateStr = activityDate.toISOString().split('T')[0];
+          if (!activityByDate.has(dateStr)) {
+            activityByDate.set(dateStr, { activeUsers: new Set(), newUsers: 0 });
+          }
+          activityByDate.get(dateStr).activeUsers.add(userId);
         }
-      });
-      
-      // Check notes created/updated on this date
-      notes.forEach(note => {
-        const noteDate = new Date(note.createdAt || note.updatedAt);
-        if (noteDate && !isNaN(noteDate.getTime()) && noteDate.toISOString().split('T')[0] === dateStr) {
-          activeUserIds.add(note.userId);
-        }
-      });
-      
-      // Check focus sessions on this date
-      focusSessions.forEach(session => {
-        const sessionDate = new Date(session.createdAt);
-        if (sessionDate && !isNaN(sessionDate.getTime()) && sessionDate.toISOString().split('T')[0] === dateStr) {
-          activeUserIds.add(session.userId);
-        }
-      });
-      
-      // Check browser activities on this date
-      browserActivities.forEach(activity => {
+      } catch (error) {
+        // Skip invalid dates
+      }
+    };
+
+    // Collect task activity
+    tasks.forEach(task => {
+      collectActivityDate(task.createdAt || task.updatedAt, task.userId);
+    });
+
+    // Collect note activity
+    notes.forEach(note => {
+      collectActivityDate(note.createdAt || note.updatedAt, note.userId);
+    });
+
+    // Collect focus session activity
+    focusSessions.forEach(session => {
+      collectActivityDate(session.createdAt, session.userId);
+    });
+
+    // Collect browser activity
+    browserActivities.forEach(activity => {
+      collectActivityDate(activity.timestamp || activity.startTime, activity.userId);
+    });
+
+    // Count new users by registration date
+    users.forEach(user => {
+      if (user.createdAt) {
         try {
-          if (!activity.timestamp) return;
-          const activityDate = new Date(activity.timestamp);
-          if (activityDate && !isNaN(activityDate.getTime()) && activityDate.toISOString().split('T')[0] === dateStr) {
-            activeUserIds.add(activity.userId);
+          const userDate = new Date(user.createdAt);
+          if (userDate && !isNaN(userDate.getTime())) {
+            const dateStr = userDate.toISOString().split('T')[0];
+            if (!activityByDate.has(dateStr)) {
+              activityByDate.set(dateStr, { activeUsers: new Set(), newUsers: 0 });
+            }
+            activityByDate.get(dateStr).newUsers++;
           }
         } catch (error) {
-          // Skip invalid date values
+          // Skip invalid dates
         }
-      });
-      
+      }
+    });
+
+    // Convert to array and sort by date (only include dates with actual activity)
+    activityByDate.forEach((data, date) => {
       dailyData.push({
-        date: dateStr,
-        activeUsers: activeUserIds.size,
-        newUsers: users.filter(user => {
-          if (!user.createdAt) return false;
-          const userDate = new Date(user.createdAt);
-          return userDate && !isNaN(userDate.getTime()) && userDate.toISOString().split('T')[0] === dateStr;
-        }).length
+        date,
+        activeUsers: data.activeUsers.size,
+        newUsers: data.newUsers
       });
-    }
-    
-    return dailyData;
+    });
+
+    // Sort by date descending and return only recent activity
+    return dailyData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   function getUserGrowthMetrics(users: any[]) {

@@ -333,7 +333,7 @@ export default function AdminDashboard() {
                 <CardContent>
                   {stats.activity.dailyActiveUsers && stats.activity.dailyActiveUsers.length > 0 ? (
                     <div className="space-y-2">
-                      {stats.activity.dailyActiveUsers.slice(-7).map((day: any, index: number) => (
+                      {stats.activity.dailyActiveUsers.slice(0, 7).map((day: any, index: number) => (
                         <div key={day.date} className="flex items-center justify-between p-2 rounded-lg bg-charcoal-50">
                           <span className="text-sm text-charcoal-600">{new Date(day.date).toLocaleDateString()}</span>
                           <div className="flex items-center space-x-2">
@@ -344,11 +344,17 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
+                      {stats.activity.dailyActiveUsers.length === 0 && (
+                        <div className="text-center py-4 text-charcoal-500">
+                          <p className="text-sm">No user activity recorded yet</p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-charcoal-400">
                       <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Activity tracking data will appear here</p>
+                      <p>No user activity data available</p>
+                      <p className="text-xs mt-1">Activity will appear when users create tasks, notes, or focus sessions</p>
                     </div>
                   )}
                 </CardContent>
