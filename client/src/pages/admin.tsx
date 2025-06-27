@@ -60,12 +60,10 @@ interface AdminStats {
     dailyAverage: number;
     yearlyProjected: number;
     breakdown: {
-      compute: number;
       database: number;
+      hosting: number;
+      api: number;
       storage: number;
-      bandwidth: number;
-      monitoring: number;
-      backup: number;
     };
     resourceUsage: {
       cpuHours: number;
@@ -442,18 +440,18 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {Object.entries(stats.activity.featureUsage).map(([feature, percentage]) => (
-                      <div key={feature} className="flex items-center justify-between">
-                        <span className="text-sm text-charcoal-700 capitalize">{feature}</span>
+                    {stats.activity.featureUsage.map((feature) => (
+                      <div key={feature.feature} className="flex items-center justify-between">
+                        <span className="text-sm text-charcoal-700 capitalize">{feature.feature}</span>
                         <div className="flex items-center gap-2">
                           <div className="w-24 bg-charcoal-200 rounded-full h-2">
                             <div 
                               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${percentage}%` }}
+                              style={{ width: `${feature.usage}%` }}
                             />
                           </div>
                           <span className="text-sm font-medium text-charcoal-900 w-10 text-right">
-                            {percentage}%
+                            {feature.usage}%
                           </span>
                         </div>
                       </div>
@@ -675,11 +673,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${(stats.costs?.breakdown?.api || 0).toLocaleString()}
+                          ${(stats.costs?.breakdown?.hosting || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
                           {(stats.costs?.monthlyTotal || 0) > 0 ? 
-                            (((stats.costs?.breakdown?.api || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                            (((stats.costs?.breakdown?.hosting || 0) / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>

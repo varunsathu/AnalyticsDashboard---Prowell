@@ -18,10 +18,10 @@ import {
   users,
   tasks,
   notes,
-  events,
   focusSessions,
   browserActivities,
   healthMetrics,
+  events,
   journalEntries,
 } from "@shared/schema";
 import { db } from "./db";
@@ -654,12 +654,10 @@ function calculateDynamicCosts(users: any[], tasks: any[], notes: any[], focusSe
     dailyAverage: Math.round(dailyAverage * 100) / 100,
     yearlyProjected: Math.round(yearlyProjected * 100) / 100,
     breakdown: {
-      compute: Math.round(computeCost * 100) / 100,
       database: Math.round(databaseCost * 100) / 100,
-      storage: Math.round(storageCost * 100) / 100,
-      bandwidth: Math.round(bandwidthCost * 100) / 100,
-      monitoring: Math.round(monitoringCost * 100) / 100,
-      backup: Math.round(backupCost * 100) / 100
+      hosting: Math.round((computeCost + monitoringCost) * 100) / 100,
+      api: Math.round(bandwidthCost * 100) / 100,
+      storage: Math.round((storageCost + backupCost) * 100) / 100
     },
     resourceUsage: {
       cpuHours: Math.round(estimatedCPUHours * 100) / 100,
@@ -892,69 +890,82 @@ function generateDailyActiveUsers(users: any[], tasks: any[], notes: any[], focu
     };
   }
 
-  // Simple admin bypass route
-  app.get("/api/admin/stats-bypass", (req: any, res) => {
-    const adminStats = {
-      users: {
-        total: 1,
-        active: 1,
-        newThisWeek: 1,
-        topUsers: [{
-          id: "42669011",
-          email: "varunsatthu@gmail.com",
-          firstName: "varun",
-          lastName: "sathu",
-          lastActive: new Date().toISOString(),
-          tasksCompleted: 0,
-          focusMinutes: 0
-        }],
-        growth: {
-          weeklyGrowth: 0,
-          monthlyGrowth: 0,
-          totalRegistrations: 1
-        }
-      },
-      usage: {
-        totalTasks: 0,
-        completedTasks: 0,
-        totalNotes: 0,
-        totalFocusSessions: 0,
-        totalFocusMinutes: 0,
-        totalBrowserActivities: 0,
-        averageSessionLength: 0
-      },
-      activity: {
-        dailyActiveUsers: [],
-        featureUsage: {
-          tasks: 0,
-          notes: 0,
-          focus: 0,
-          browser: 0,
-          health: 0,
-          journal: 0
-        },
-        peakUsageHours: []
-      },
-      health: {
-        apiResponseTime: 0,
-        uptime: 100,
-        errorRate: 0,
-        databaseSize: 0
-      },
-      costs: {
-        monthlyTotal: 0,
-        dailyAverage: 0,
-        yearlyProjected: 0,
-        breakdown: {
-          database: 0,
-          hosting: 0,
-          api: 0,
-          storage: 0
-        }
-      }
-    };
+  // Admin bypass route with real database queries
+  app.get("/api/admin/stats-bypass", async (req: any, res) => {
+    try {
+      // Use storage interface for clean database access
+      const usersData = await db.select().from(users);
+      const tasksData = await db.select().from(tasks);
+      const notesData = await db.select().from(notes);
+      const focusSessionsData = await db.select().from(focusSessions);
+      const browserActivitiesData = await db.select().from(browserActivities);
+      const healthMetricsData = await db.select().from(healthMetrics);
 
-    res.json(adminStats);
+      const now = new Date();
+      const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const activeUsers = usersData.filter(user => 
+        user.updatedAt && new Date(user.updatedAt) > thisWeek
+      );
+
+      const newThisWeek = usersData.filter(user => 
+        user.createdAt && new Date(user.createdAt) > thisWeek
+      ).length;
+
+      const completedTasks = tasksData.filter(task => task.status === 'completed').length;
+      const totalFocusMinutes = focusSessionsData.reduce((sum, session) => 
+        sum + (session.duration || 0), 0
+      );
+
+      const adminStats = {
+        users: {
+          total: usersData.length,
+          active: activeUsers.length,
+          newThisWeek,
+          topUsers: usersData.slice(0, 5).map(user => ({
+            id: user.id,
+            email: user.email || 'N/A',
+            firstName: user.firstName || 'N/A',
+            lastName: user.lastName || 'N/A',
+            lastActive: user.updatedAt || user.createdAt,
+            tasksCompleted: tasksData.filter(t => t.userId === user.id && t.status === 'completed').length,
+            focusMinutes: focusSessionsData.filter(f => f.userId === user.id).reduce((sum, s) => sum + (s.duration || 0), 0)
+          })),
+          growth: {
+            weeklyGrowth: 0,
+            monthlyGrowth: 0,
+            totalRegistrations: usersData.length
+          }
+        },
+        usage: {
+          totalTasks: tasksData.length,
+          completedTasks,
+          totalNotes: notesData.length,
+          totalFocusSessions: focusSessionsData.length,
+          totalFocusMinutes,
+          totalBrowserActivities: browserActivitiesData.length,
+          averageSessionLength: focusSessionsData.length > 0 ? 
+            Math.round(totalFocusMinutes / focusSessionsData.length) : 0
+        },
+        activity: {
+          dailyActiveUsers: generateDailyActiveUsers(usersData, tasksData, notesData, focusSessionsData, browserActivitiesData),
+          featureUsage: calculateFeatureUsage(usersData, tasksData, notesData, focusSessionsData, browserActivitiesData, healthMetricsData),
+          peakUsageHours: calculatePeakUsageHours(tasksData, notesData, focusSessionsData, browserActivitiesData)
+        },
+        health: {
+          apiResponseTime: 0,
+          uptime: 100,
+          errorRate: 0,
+          databaseSize: 0
+        },
+        costs: calculateDynamicCosts(usersData, tasksData, notesData, focusSessionsData, browserActivitiesData, healthMetricsData)
+      };
+
+      res.json(adminStats);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      res.status(500).json({ message: 'Failed to fetch admin statistics' });
+    }
   });
 
   // Original admin route
