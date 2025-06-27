@@ -554,13 +554,13 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Monthly Costs</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {stats.costs.monthlyTotal > 0 ? (
+                  {(stats.costs?.monthlyTotal || 0) > 0 ? (
                     <>
                       <div className="text-2xl font-bold text-orange-700">
-                        ${stats.costs.monthlyTotal.toLocaleString()}
+                        ${(stats.costs?.monthlyTotal || 0).toLocaleString()}
                       </div>
-                      <Badge className={`${stats.costs.trends.growth > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {stats.costs.trends.growth > 0 ? '+' : ''}{stats.costs.trends.growth.toFixed(1)}% vs last month
+                      <Badge className={`${(stats.costs?.trends?.growth || 0) > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {(stats.costs?.trends?.growth || 0) > 0 ? '+' : ''}{(stats.costs?.trends?.growth || 0).toFixed(1)}% vs last month
                       </Badge>
                     </>
                   ) : (
@@ -581,10 +581,10 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Daily Average</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {stats.costs.dailyAverage > 0 ? (
+                  {(stats.costs?.dailyAverage || 0) > 0 ? (
                     <>
                       <div className="text-2xl font-bold text-blue-700">
-                        ${stats.costs.dailyAverage.toFixed(2)}
+                        ${(stats.costs?.dailyAverage || 0).toFixed(2)}
                       </div>
                       <Badge className="bg-blue-100 text-blue-700">
                         Per day
@@ -608,10 +608,10 @@ export default function AdminDashboard() {
                   <CardTitle className="text-sm text-charcoal-600">Yearly Projected</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {stats.costs.yearlyProjected > 0 ? (
+                  {(stats.costs?.yearlyProjected || 0) > 0 ? (
                     <>
                       <div className="text-2xl font-bold text-purple-700">
-                        ${stats.costs.yearlyProjected.toLocaleString()}
+                        ${(stats.costs?.yearlyProjected || 0).toLocaleString()}
                       </div>
                       <Badge className="bg-purple-100 text-purple-700">
                         Estimate
@@ -660,11 +660,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.compute.toLocaleString()}
+                          ${(stats.costs?.breakdown?.compute || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.compute / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.compute || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -678,11 +678,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.database.toLocaleString()}
+                          ${(stats.costs?.breakdown?.database || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.database / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.database || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -696,11 +696,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.storage.toLocaleString()}
+                          ${(stats.costs?.breakdown?.storage || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.storage / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.storage || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -714,11 +714,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.bandwidth.toLocaleString()}
+                          ${(stats.costs?.breakdown?.bandwidth || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.bandwidth / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.bandwidth || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -732,11 +732,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.monitoring.toLocaleString()}
+                          ${(stats.costs?.breakdown?.monitoring || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.monitoring / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.monitoring || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -750,11 +750,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-charcoal-900">
-                          ${stats.costs.breakdown.backup.toLocaleString()}
+                          ${(stats.costs?.breakdown?.backup || 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-charcoal-600">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            ((stats.costs.breakdown.backup / stats.costs.monthlyTotal) * 100).toFixed(1) + '%' :
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            (((stats.costs?.breakdown?.backup || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1) + '%' :
                             '0%'
                           }
                         </div>
@@ -774,42 +774,42 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">CPU Hours</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.cpuHours.toLocaleString()}h
+                        {(stats.costs?.resourceUsage?.cpuHours || 0).toLocaleString()}h
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">Memory GB Hours</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.memoryGBHours.toLocaleString()}
+                        {(stats.costs?.resourceUsage?.memoryGBHours || 0).toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">Storage Used</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.storageGB.toFixed(1)} GB
+                        {(stats.costs?.resourceUsage?.storageGB || 0).toFixed(1)} GB
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">Bandwidth</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.bandwidthGB.toFixed(1)} GB
+                        {(stats.costs?.resourceUsage?.bandwidthGB || 0).toFixed(1)} GB
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">DB Connections</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.databaseConnections.toLocaleString()}
+                        {(stats.costs?.resourceUsage?.databaseConnections || 0).toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <span className="text-sm text-charcoal-700">API Requests</span>
                       <span className="text-sm font-medium text-charcoal-900">
-                        {stats.costs.resourceUsage.apiRequests.toLocaleString()}
+                        {(stats.costs?.resourceUsage?.apiRequests || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -823,39 +823,39 @@ export default function AdminDashboard() {
                 <CardTitle>Top Resource Consuming Users</CardTitle>
               </CardHeader>
               <CardContent>
-                {stats.costs.topResourceUsers.length > 0 ? (
+                {(stats.costs?.topResourceUsers || []).length > 0 ? (
                   <div className="space-y-4">
-                    {stats.costs.topResourceUsers
-                      .sort((a, b) => b.estimatedCost - a.estimatedCost)
+                    {(stats.costs?.topResourceUsers || [])
+                      .sort((a, b) => (b.estimatedCost || 0) - (a.estimatedCost || 0))
                       .map((user, index) => (
                     <div key={user.userId} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                       <div>
                         <div className="font-medium text-charcoal-900">{user.email}</div>
                         <div className="text-sm text-charcoal-600">
-                          {user.resourceUsage.apiCalls.toLocaleString()} API calls • {user.resourceUsage.cpuMinutes} CPU minutes
+                          {(user.resourceUsage?.apiCalls || 0).toLocaleString()} API calls • {user.resourceUsage?.cpuMinutes || 0} CPU minutes
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant={
-                            user.estimatedCost > 30 ? "destructive" : 
-                            user.estimatedCost > 15 ? "secondary" : "outline"
+                            (user.estimatedCost || 0) > 30 ? "destructive" : 
+                            (user.estimatedCost || 0) > 15 ? "secondary" : "outline"
                           }>
-                            {user.estimatedCost > 30 ? "High Usage" : user.estimatedCost > 15 ? "Medium Usage" : "Low Usage"}
+                            {(user.estimatedCost || 0) > 30 ? "High Usage" : (user.estimatedCost || 0) > 15 ? "Medium Usage" : "Low Usage"}
                           </Badge>
                           <span className="text-xs text-charcoal-500">
-                            {user.resourceUsage.storageGB.toFixed(1)}GB storage • {user.resourceUsage.bandwidthGB.toFixed(1)}GB bandwidth
+                            {(user.resourceUsage?.storageGB || 0).toFixed(1)}GB storage • {(user.resourceUsage?.bandwidthGB || 0).toFixed(1)}GB bandwidth
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-charcoal-900">
-                          ${user.estimatedCost.toFixed(2)}
+                          ${(user.estimatedCost || 0).toFixed(2)}
                         </div>
                         <div className="text-xs text-charcoal-600">
                           Estimated monthly cost
                         </div>
                         <div className="text-xs text-charcoal-500">
-                          {stats.costs.monthlyTotal > 0 ? 
-                            `${((user.estimatedCost / stats.costs.monthlyTotal) * 100).toFixed(1)}% of total` : 
+                          {(stats.costs?.monthlyTotal || 0) > 0 ? 
+                            `${(((user.estimatedCost || 0) / (stats.costs?.monthlyTotal || 1)) * 100).toFixed(1)}% of total` : 
                             'Cost tracking pending'
                           }
                         </div>
