@@ -138,6 +138,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Inject a dummy user in development mode for all requests
+if (process.env.NODE_ENV === "development") {
+  app.use((req, res, next) => {
+    req.user = {
+      id: "dev-user-id",
+      email: "dev@local.test",
+      firstName: "Dev",
+      lastName: "User"
+    };
+    next();
+  });
+}
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -158,15 +171,14 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
+  // ALWAYS serve the app on port 3000 for local development
   // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
+  const port = process.env.NODE_ENV === "development" ? 3000 : 5000;
+  server.listen(
     port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+    "0.0.0.0",
+    () => {
+      log(`serving on port ${port}`);
+    }
+  );
 })();

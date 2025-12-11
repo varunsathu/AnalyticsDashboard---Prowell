@@ -8,7 +8,7 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+if (process.env.NODE_ENV !== "development" && !process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -73,6 +73,13 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  if (process.env.NODE_ENV === "development") {
+    // Skip auth setup in development
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    return;
+  }
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -85,8 +92,7 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -135,6 +141,11 @@ const AUTHORIZED_USERS = [
 ];
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Bypass authentication in development
+  if (process.env.NODE_ENV === "development") {
+    return next();
+  }
+
   const user = req.user as any;
 
   console.log('isAuthenticated check - authenticated:', req.isAuthenticated(), 'user:', user);
